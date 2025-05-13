@@ -1,0 +1,6 @@
+psutil
+aiomqtt
+dependency-injector
+apscheduler
+loguru
+fastapi[standard]

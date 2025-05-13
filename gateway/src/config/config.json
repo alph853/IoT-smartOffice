@@ -1,0 +1,89 @@
+{
+    "thingsboard": {
+        "url": "192.168.1.100",
+        "port": 1883,
+        "password": "password",
+        "username": "username",
+        "client_id": "client_id"
+    },
+    "mosquitto": {
+        "url": "192.168.1.100",
+        "port": 1883
+    },
+    "gateway_topics": [
+        {
+            "topic": "test/topic",
+            "qos": 1,
+            "retain": 0,
+            "description": "Test for connection",
+            "src": "device",
+            "dst": "gateway"
+        },
+        {
+            "topic": "gateway/register/request",
+            "qos": 1,
+            "retain": 0,
+            "description": "Device publishes its registration request to join the system",
+            "src": "device",
+            "dst": "gateway"
+        },
+        {
+            "topic": "gateway/telemetry/#",
+            "qos": 1,
+            "retain": 0,
+            "description": "Device publishes periodic telemetry data",
+            "src": "device",
+            "dst": "gateway"
+        },
+        {
+            "topic": "gateway/register/response/{device_id}",
+            "qos": 1,
+            "retain": true,
+            "description": "Gateway replies to device registration request with credentials & config",
+            "src": "gateway",
+            "dst": "device"
+        },
+        {
+            "topic": "gateway/control/commands/{device_id}",
+            "qos": 1,
+            "retain": true,
+            "description": "Forward cloud commands to the device",
+            "src": "gateway",
+            "dst": "device"
+        },
+        {
+            "topic": "gateway/control/response/#",
+            "qos": 1,
+            "retain": 0,
+            "description": "Device replies to cloud commands",
+            "src": "device",
+            "dst": "gateway"
+        }
+    ],
+    "thingsboard_topics": [
+        {
+            "topic": "v1/devices/me/rpc/request",
+            "qos": 1,
+            "retain": 0,
+            "description": "Cloud sends RPC request to the device",
+            "src": "cloud",
+            "dst": "gateway"
+        },
+        {
+            "topic": "v1/devices/me/rpc/response",
+            "qos": 0,
+            "retain": 1,
+            "description": "Gateway sends RPC response to the cloud",
+            "src": "gateway",
+            "dst": "cloud"
+        },
+        {
+            "topic": "v1/devices/me/telemetry",
+            "qos": 0,
+            "retain": 1,
+            "description": "Gateway publishes telemetry data to the cloud",
+            "src": "gateway",
+            "dst": "cloud"
+        }
+    ]
+}
