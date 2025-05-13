@@ -1,14 +1,22 @@
 {
     "thingsboard": {
-        "url": "192.168.1.100",
+        "url": "app.coreiot.io",
         "port": 1883,
-        "password": "password",
-        "username": "username",
-        "client_id": "client_id"
+        "password": "",
+        "username": "g316u7decaqvzze7kbe1",
+        "client_id": "",
+        "device_id": "f5883950-2739-11f0-a3c9-ab0d8999f561",
+        "device_name": "IoT Gateway"
     },
     "mosquitto": {
         "url": "192.168.1.100",
         "port": 1883
+    },
+    "backend": {
+        "url": "http://192.168.1.100:8000",
+        "api": {
+            "all_devices": "/devices"
+        }
     },
     "gateway_topics": [
         {

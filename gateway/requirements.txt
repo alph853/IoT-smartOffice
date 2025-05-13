@@ -4,3 +4,7 @@ dependency-injector
 apscheduler
 loguru
 fastapi[standard]
+aiohttp
+tb-mqtt-client
+pymmh3
+redis

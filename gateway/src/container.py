@@ -10,6 +10,7 @@ from src.services.auto_dispatcher import AutoDispatcherService
 from src.config import ConfigUtils
 from src.domain.models import MqttTopic
 from src.infra.mqtt import MosquittoClient, MosquittoListener, ThingsboardClient, ThingsboardListener
+from src.infra.http import HttpClient
 
 
 class Container(containers.DeclarativeContainer):
@@ -42,6 +43,9 @@ class Container(containers.DeclarativeContainer):
         event_bus   = event_bus,
         topics      = gateway_topics,
     )
+    http_client = providers.Singleton(
+        HttpClient,
+    )
     thingsboard_listener = providers.Singleton(
         ThingsboardListener,
         msg_generator = thingsboard_client.provided.messages,
@@ -63,6 +67,7 @@ class Container(containers.DeclarativeContainer):
         gw_client=mosquitto_client,
         cloud_client=thingsboard_client,
         event_bus=event_bus,
+        http_client=http_client,
     )
     telemetry_service = providers.Singleton(
         TelemetryService,

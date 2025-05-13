@@ -10,8 +10,12 @@ from src.domain.repositories import MqttGatewayClientRepository
 
 
 class MosquittoClient(MqttGatewayClientRepository):
-    def __init__(self, broker_url: str, broker_port: int,
-                 event_bus: EventBusInterface, topics: List[MqttTopic]):
+    def __init__(self,
+                 broker_url: str,
+                 broker_port: int,
+                 event_bus: EventBusInterface,
+                 topics: List[MqttTopic]
+                 ):
         self.broker_url = broker_url
         self.broker_port = broker_port
         self.event_bus = event_bus
@@ -19,10 +23,6 @@ class MosquittoClient(MqttGatewayClientRepository):
         self.client = None
         self.subscribed_topics = list(filter(lambda t:
             t.src == Entity.DEVICE and t.dst == Entity.GATEWAY,
-            topics
-        ))
-        self.published_topics = list(filter(lambda t:
-            t.src == Entity.GATEWAY and t.dst == Entity.DEVICE,
             topics
         ))
 
@@ -58,8 +58,7 @@ class MosquittoClient(MqttGatewayClientRepository):
     # ------------------------- Publisher -------------------------
     # -------------------------------------------------------------
 
-    async def publish(self, topic: str, payload: str):
-        topic = next(filter(lambda t: t.topic.value == topic, self.published_topics))
+    async def publish(self, topic: MqttTopic, payload: str):
         await self.client.publish(topic.topic.value, payload, topic.qos, topic.retain)
 
     # -------------------------------------------------------------

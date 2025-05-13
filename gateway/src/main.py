@@ -21,9 +21,7 @@ async def lifespan(container: Container):
         logger.warning("Could not discover LAN IP")
     logger.info(f"Using broker URL: {container.config.mosquitto.url()}:{container.config.mosquitto.port()}")
 
-    # ------------------------------------------------------------
     # --------------------- Infrastructures ----------------------
-    # ------------------------------------------------------------
 
     mqtt_cloud_client     = container.thingsboard_client()
     mqtt_gateway_client   = container.mosquitto_client()
@@ -39,9 +37,7 @@ async def lifespan(container: Container):
 
     # await scheduler.start()
 
-    # ------------------------------------------------------------
     # ------------------------- Services -------------------------
-    # ------------------------------------------------------------
 
     registration_service = container.registration_service()
     telemetry_service    = container.telemetry_service()
