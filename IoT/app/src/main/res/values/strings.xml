@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">IoT</string>
+    <string name="general">General</string>
+    <string name="mcu">MCU</string>
+    <string name="yolo_uno_1">Yolo Uno 1</string>
+    <string name="yolo_uno_2">Yolo Uno 2</string>
+    <string name="sensor">Sensor</string>
+    <string name="dht20">DHT20</string>
+    <string name="light_sensor">Light sensor</string>
+    <string name="sensor_description">descriptionnnnnnnnnn description</string>
 </resources>
