@@ -1,21 +1,36 @@
 {
+    "gateway": {
+        "name": "IoT Gateway",
+        "id": 1
+    },
+    "office": {
+        "id": 1
+    },
     "thingsboard": {
         "url": "app.coreiot.io",
         "port": 1883,
-        "password": "",
+        "password": null,
         "username": "g316u7decaqvzze7kbe1",
         "client_id": "",
         "device_id": "f5883950-2739-11f0-a3c9-ab0d8999f561",
         "device_name": "IoT Gateway"
+    },
+    "redis": {
+        "host": "localhost",
+        "port": 6379,
+        "db": 0
     },
     "mosquitto": {
         "url": "192.168.1.100",
         "port": 1883
     },
     "backend": {
-        "url": "http://192.168.1.100:8000",
+        "url": "http://192.168.1.189:8000",
         "api": {
-            "all_devices": "/devices"
+            "get_all_devices": "/devices",
+            "create_device": "/devices",
+            "update_device": "/devices/{device_id}",
+            "delete_device": "/devices/{device_id}"
         }
     },
     "gateway_topics": [

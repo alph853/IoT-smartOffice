@@ -1,6 +1,5 @@
-from .registration import RegisterMessage
 from .notification import Notification
 from .mqtt import MqttTopic, Entity, Topic
-from .device import Device
+from .device import Device, DeviceRegistration, DeviceCreate
 
-__all__ = ["RegisterMessage", "Notification", "MqttTopic", "Entity", "Topic", "Device"]
+__all__ = ["Notification", "MqttTopic", "Entity", "Topic", "Device", "DeviceRegistration", "DeviceCreate"]

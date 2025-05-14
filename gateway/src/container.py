@@ -1,16 +1,14 @@
 from dependency_injector import containers, providers
 
 from src.infra.event_bus import InProcEventBus
-from src.infra.mqtt import ThingsboardClient, MosquittoListener
+from src.infra.mqtt import ThingsboardClient, MosquittoClient
 from src.infra.scheduler import APScheduler
 from src.services.registration import RegistrationService
 from src.services.telemetry import TelemetryService
-from src.services.auto_dispatcher import AutoDispatcherService
 
 from src.config import ConfigUtils
-from src.domain.models import MqttTopic
-from src.infra.mqtt import MosquittoClient, MosquittoListener, ThingsboardClient, ThingsboardListener
 from src.infra.http import HttpClient
+from src.infra.redis import RedisCacheClient
 
 
 class Container(containers.DeclarativeContainer):
@@ -20,12 +18,9 @@ class Container(containers.DeclarativeContainer):
         ConfigUtils.get_mqtt_topics,
         config.gateway_topics,
     )
-    thingsboard_topics   = providers.Singleton(
-        ConfigUtils.get_mqtt_topics,
-        config.thingsboard_topics,
-    )
 
     event_bus   = providers.Singleton(InProcEventBus)
+
     thingsboard_client = providers.Singleton(
         ThingsboardClient,
         broker_url  = config.thingsboard.url,
@@ -34,7 +29,6 @@ class Container(containers.DeclarativeContainer):
         username    = config.thingsboard.username,
         client_id   = config.thingsboard.client_id,
         event_bus   = event_bus,
-        topics      = thingsboard_topics,
     )
     mosquitto_client = providers.Singleton(
         MosquittoClient,
@@ -45,17 +39,17 @@ class Container(containers.DeclarativeContainer):
     )
     http_client = providers.Singleton(
         HttpClient,
+        url=config.backend.url,
+        api=config.backend.api,
     )
-    thingsboard_listener = providers.Singleton(
-        ThingsboardListener,
-        msg_generator = thingsboard_client.provided.messages,
-        event_bus     = event_bus,
+    cache_client = providers.Singleton(
+        RedisCacheClient,
+        host=config.redis.host,
+        port=config.redis.port.as_int(),
+        db=config.redis.db.as_int(),
+        http_client=http_client,
     )
-    mosquitto_listener = providers.Singleton(
-        MosquittoListener,
-        msg_generator = mosquitto_client.provided.messages,
-        event_bus     = event_bus,
-    )
+
     scheduler = providers.Singleton(
         APScheduler,
         event_bus = event_bus,
@@ -68,6 +62,8 @@ class Container(containers.DeclarativeContainer):
         cloud_client=thingsboard_client,
         event_bus=event_bus,
         http_client=http_client,
+        cache_client=cache_client,
+        gateway_id=config.gateway.id,
     )
     telemetry_service = providers.Singleton(
         TelemetryService,

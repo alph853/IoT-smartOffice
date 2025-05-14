@@ -12,7 +12,6 @@ from tb_gateway_mqtt import TBGatewayMqttClient
 class ThingsboardClient(MqttCloudClientRepository):
     def __init__(self, broker_url: str,
                  password: str,
-                 topics: List[MqttTopic],
                  event_bus: EventBusInterface,
                  broker_port: int = 1883,
                  client_id: str = "",
@@ -27,10 +26,6 @@ class ThingsboardClient(MqttCloudClientRepository):
         self.event_bus   = event_bus
 
         self.client = None
-        self.subscribed_topics = list(filter(lambda t:
-            t.src == Entity.CLOUD and t.dst == Entity.GATEWAY,
-            topics
-        ))
 
     # -------------------------------------------------------------
     # ------------------------- Lifecycle -------------------------
@@ -44,28 +39,39 @@ class ThingsboardClient(MqttCloudClientRepository):
             password=self.password,
             client_id=self.client_id,
         )
-        await self.client.__aenter__()
-
-        subscription_tasks = [
-            self.client.subscribe(topic=(topic.topic, topic.retain), qos=topic.qos)
-            for topic in self.subscribed_topics
-        ]
-        await asyncio.gather(*subscription_tasks)
-        logger.info(f"Subscribed to {len(self.subscribed_topics)} topics")
-        logger.info(f"Thingsboard broker connected at {self.broker_url}:{self.broker_port}.")
+        self.client.connect()
+        self.client.gw_subscribe_to_all_attributes(self.attribute_callback)
+        self.client.set_server_side_rpc_request_handler(self.rpc_callback)
 
     async def disconnect(self):
-        await self.client.__aexit__(None, None, None)
+        self.client.disconnect()
         logger.info(f"Thingsboard broker disconnected.")
-
-    @property
-    def messages(self) -> MessagesIterator:
-        return self.client.messages
 
     # -------------------------------------------------------------
     # ------------------------- Publish -------------------------
     # -------------------------------------------------------------
 
-    async def publish(self, topic: MqttTopic, payload: str):
-        await self.client.publish(topic.topic, payload, topic.qos, topic.retain)
-    
+    async def connect_device(self, device: str):
+        return self.client.gw_connect_device(device)
+
+    async def disconnect_device(self, device: str):
+        return self.client.gw_disconnect_device(device)
+
+    async def send_telemetry(self, device: str, telemetry: dict, qos: int = 1):
+        return self.client.gw_send_telemetry(device, telemetry, qos)
+
+    async def send_attributes(self, device: str, attributes: dict, qos: int = 1):
+        return self.client.gw_send_attributes(device, attributes, qos)
+
+    async def send_rpc_reply(self, device: str, method: str, params: dict, qos: int = 1):
+        return self.client.gw_send_rpc_reply(device, method, params, qos)
+
+    # -------------------------------------------------------------
+    # ------------------------- Callback -------------------------
+    # -------------------------------------------------------------
+
+    async def attribute_callback(self, device, key, value):
+        logger.info(f"Attribute {key} of device {device} has been updated to {value}")
+
+    async def rpc_callback(self, device, method, params):
+        logger.info(f"RPC {method} of device {device} has been called with params {params}")

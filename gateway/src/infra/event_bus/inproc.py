@@ -1,11 +1,8 @@
 import asyncio
 from collections import defaultdict
-from typing import Any, Callable, Dict, List, Type
+from typing import Any, Dict, List, Type
 
-from src.domain.events import EventBusInterface
-
-
-EventHandler = Callable[[Any], asyncio.Future]
+from src.domain.events import EventBusInterface, EventHandler
 
 
 class InProcEventBus(EventBusInterface):

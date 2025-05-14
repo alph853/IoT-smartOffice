@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Callable
 
+from src.domain.models import DeviceRegistration, Device
+
 
 class MqttCloudClientRepository(ABC):
     # -------------------------------------------------------------
@@ -14,27 +16,28 @@ class MqttCloudClientRepository(ABC):
     @abstractmethod
     def disconnect(self):
         pass
-
-    @abstractmethod
-    def messages(self):
-        pass
     
     # -------------------------------------------------------------
     # ------------------------- Publish -------------------------
     # -------------------------------------------------------------
 
     @abstractmethod
-    def publish_telemetry(self, topic: str, payload: str, qos: int, retain: bool):
+    def connect_device(self, device: Device):
+        pass
+    
+    @abstractmethod
+    def disconnect_device(self, device: Device):
+        pass
+    
+    @abstractmethod
+    def send_telemetry(self, device: Device, telemetry: dict, qos: int = 1):
         pass
 
     @abstractmethod
-    def publish_rpc_response(self, topic: str, payload: str, qos: int, retain: bool):
+    def send_attributes(self, device: Device, attributes: dict, qos: int = 1):
         pass
-    
+
     @abstractmethod
-    def publish_rpc_request(self, topic: str, payload: str, qos: int, retain: bool):
+    def send_rpc_reply(self, device: Device, method: str, params: dict, qos: int = 1):
         pass
-    
-    
-    
     

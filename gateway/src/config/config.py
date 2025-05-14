@@ -22,4 +22,7 @@ class ConfigUtils:
 
     @staticmethod
     def get_config_path(config_path: str):
-        return os.path.join(os.path.dirname(__file__), config_path)
+        path = os.path.join(os.path.dirname(__file__), config_path)
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Config file not found: {path}")
+        return path

@@ -10,8 +10,11 @@ class TelemetryService:
         self.cloud_client = cloud_client
         self.event_bus = event_bus
 
-    async def subscribe_events(self):
+    async def start(self):
         await self.event_bus.subscribe(TelemetryEvent, self.handle_telemetry)
+
+    async def stop(self):
+        await self.event_bus.unsubscribe(TelemetryEvent, self.handle_telemetry)
 
     async def handle_telemetry(self, event: TelemetryEvent):
         logger.info(f"Received telemetry event: {event}")

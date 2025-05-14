@@ -23,15 +23,14 @@ async def lifespan(container: Container):
 
     # --------------------- Infrastructures ----------------------
 
+    http_client           = container.http_client()
+    cache_client          = container.cache_client()
     mqtt_cloud_client     = container.thingsboard_client()
     mqtt_gateway_client   = container.mosquitto_client()
+    await http_client.connect()
+    await cache_client.connect()
     await mqtt_cloud_client.connect()
     await mqtt_gateway_client.connect()
-
-    mqtt_cloud_listener   = container.thingsboard_listener()
-    mqtt_gateway_listener = container.mosquitto_listener()
-    await mqtt_cloud_listener.start()
-    await mqtt_gateway_listener.start()
 
     # scheduler     = container.scheduler()
 
@@ -43,8 +42,8 @@ async def lifespan(container: Container):
     telemetry_service    = container.telemetry_service()
     # auto_dispatcher      = container.auto_dispatcher()
 
-    await registration_service.subscribe_events()
-    await telemetry_service.subscribe_events()
+    await registration_service.start()
+    await telemetry_service.start()
 
     # --------
     yield
@@ -54,8 +53,9 @@ async def lifespan(container: Container):
     try:
         await mqtt_gateway_client.disconnect()
         await mqtt_cloud_client.disconnect()
-        await mqtt_gateway_listener.stop()
-        await mqtt_cloud_listener.stop()
+
+        await registration_service.stop()
+        await telemetry_service.stop()
         logger.info("Gateway shutdown successfully")
     except Exception as e:
         logger.error(f"Error shutting down gateway: {e}")
