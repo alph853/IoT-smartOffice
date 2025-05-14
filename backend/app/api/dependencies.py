@@ -1,0 +1,19 @@
+from fastapi import Request, WebSocket
+import aiohttp
+from app.services import *
+
+
+def get_control_service(request: Request) -> ControlService:
+    return request.app.state.control_service
+
+
+def get_notification_service(request: Request) -> NotificationService:
+    return request.app.state.notification_service
+
+
+def get_device_service(request: Request) -> DeviceService:
+    return request.app.state.device_service
+
+
+def get_session(request: Request) -> aiohttp.ClientSession:
+    return request.app.state.session
