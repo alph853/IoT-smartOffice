@@ -2,343 +2,131 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/background_black"
     tools:context=".MainActivity">
 
-    <LinearLayout
+    <!-- Home screen content (header and content) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/home_screen"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/bottom_navigation"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <!-- Green header with profile icon -->
-        <RelativeLayout
+        <!-- Header with company name, tagline and profile icon -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/header_layout"
             android:layout_width="match_parent"
-            android:layout_height="140dp"
-            android:background="#2FCB57"
-            android:paddingLeft="20dp"
-            android:paddingRight="20dp"
-            android:paddingBottom="24dp">
+            android:layout_height="wrap_content"
+            android:background="@color/dark_header"
+            android:paddingStart="20dp"
+            android:paddingTop="81dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="20dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
             <TextView
+                android:id="@+id/tv_company_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/general"
-                android:textColor="#FFFFFF"
-                android:textSize="36sp"
+                android:text="@string/app_name"
+                android:textColor="@color/white"
+                android:textSize="32sp"
                 android:textStyle="bold"
-                android:layout_alignParentBottom="true" />
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/tv_tagline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/tagline"
+                android:textColor="@color/grey"
+                android:textSize="14sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tv_company_name" />
 
             <ImageView
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_alignParentEnd="true"
-                android:layout_alignParentBottom="true"
-                android:contentDescription="Profile"
-                android:src="@drawable/ic_pfp" />
+                android:id="@+id/iv_profile"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:contentDescription="Profile icon"
+                android:src="@drawable/ic_profile"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
-        </RelativeLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <!-- Black content area -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@color/black"
-            android:orientation="vertical"
-            android:paddingLeft="20dp"
-            android:paddingRight="20dp"
-            android:paddingTop="24dp"
-            android:paddingBottom="24dp">
+        <!-- Home content -->
+        <TextView
+            android:id="@+id/home_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Home Fragment"
+            android:textColor="@color/white"
+            android:textSize="24sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-            <!-- MCU Title -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/mcu"
-                android:textColor="#FFFFFF"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="14dp" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <!-- MCU Card -->
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="10dp"
-                app:cardBackgroundColor="#1C1C1E"
-                android:layout_marginBottom="98dp">
+    <!-- Other screens fragment container, initially invisible -->
+    <FrameLayout
+        android:id="@+id/fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@+id/bottom_navigation"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
+    <!-- Navigation Bar -->
+    <LinearLayout
+        android:id="@+id/bottom_navigation"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:background="@drawable/bg_navbar"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
 
-                    <!-- Yolo Uno 1 -->
-                    <RelativeLayout
-                        android:id="@+id/yolo_uno_1_container"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:paddingTop="24dp"
-                        android:paddingBottom="24dp"
-                        android:paddingLeft="20dp"
-                        android:paddingRight="20dp"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:background="?android:attr/selectableItemBackground">
+        <!-- Home -->
+        <include
+            android:id="@+id/nav_home"
+            layout="@layout/item_nav" />
 
+        <!-- Control -->
+        <include
+            android:id="@+id/nav_control"
+            layout="@layout/item_nav" />
 
+        <!-- Camera -->
+        <include
+            android:id="@+id/nav_camera"
+            layout="@layout/item_nav" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/yolo_uno_1"
-                            android:textColor="#FFFFFF"
-                            android:textSize="14sp"
-                            android:layout_centerVertical="true" />
+        <!-- Notification -->
+        <include
+            android:id="@+id/nav_notification"
+            layout="@layout/item_nav" />
 
-                        <ImageView
-                            android:id="@+id/status_yolo_uno_1"
-                            android:layout_width="22dp"
-                            android:layout_height="22dp"
-                            android:layout_toLeftOf="@id/info_yolo_uno_1"
-                            android:layout_centerVertical="true"
-                            android:layout_marginRight="20dp"
-                            android:src="@drawable/ic_select"
-                            android:visibility="visible"
-                            app:tint="#0000FF" />
+        <!-- Setting -->
+        <include
+            android:id="@+id/nav_setting"
+            layout="@layout/item_nav" />
 
-                        <ImageView
-                            android:id="@+id/info_yolo_uno_1"
-                            android:layout_width="22dp"
-                            android:layout_height="22dp"
-                            android:layout_alignParentEnd="true"
-                            android:layout_centerVertical="true"
-                            android:src="@drawable/ic_info" />
-                    </RelativeLayout>
-
-                    <!-- Divider -->
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="#353537" />
-
-                    <!-- Yolo Uno 2 -->
-                    <RelativeLayout
-                        android:id="@+id/yolo_uno_2_container"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:paddingTop="24dp"
-                        android:paddingBottom="24dp"
-                        android:paddingLeft="20dp"
-                        android:paddingRight="20dp"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:background="?android:attr/selectableItemBackground">
-
-
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/yolo_uno_2"
-                            android:textColor="#FFFFFF"
-                            android:textSize="14sp"
-                            android:layout_centerVertical="true" />
-
-                        <ImageView
-                            android:id="@+id/status_yolo_uno_2"
-                            android:layout_width="22dp"
-                            android:layout_height="22dp"
-                            android:layout_toLeftOf="@id/info_yolo_uno_2"
-                            android:layout_centerVertical="true"
-                            android:layout_marginRight="20dp"
-                            android:src="@drawable/ic_select"
-                            android:visibility="invisible"
-                            app:tint="#0000FF" />
-
-                        <ImageView
-                            android:id="@+id/info_yolo_uno_2"
-                            android:layout_width="22dp"
-                            android:layout_height="22dp"
-                            android:layout_alignParentEnd="true"
-                            android:layout_centerVertical="true"
-                            android:src="@drawable/ic_info" />
-                    </RelativeLayout>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- Sensor Title with Add Button -->
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="14dp">
-                
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/sensor"
-                    android:textColor="#FFFFFF"
-                    android:textSize="24sp"
-                    android:textStyle="bold"
-                    android:layout_centerVertical="true" />
-                
-                <ImageButton
-                    android:id="@+id/add_sensor_button"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Add sensor"
-                    android:src="@drawable/ic_add" />
-            </RelativeLayout>
-
-            <!-- Sensor Cards Container -->
-            <androidx.core.widget.NestedScrollView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
-                
-                <LinearLayout
-                    android:id="@+id/sensor_cards_container"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-                    
-                    <!-- Initial Sensor Row -->
-                    <LinearLayout
-                        android:id="@+id/initial_sensor_row"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:weightSum="2"
-                        android:layout_marginBottom="20dp">
-
-                        <!-- DHT20 Card -->
-                        <androidx.cardview.widget.CardView
-                            android:id="@+id/dht20_card"
-                            android:layout_width="0dp"
-                            android:layout_height="0dp"
-                            android:layout_weight="1"
-                            android:layout_marginEnd="20dp"
-                            app:cardCornerRadius="20dp"
-                            app:cardBackgroundColor="#1C1C1E">
-
-                            <FrameLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent">
-                                
-                                <LinearLayout
-                                    android:id="@+id/dht20_container"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:orientation="vertical"
-                                    android:gravity="center"
-                                    android:padding="1dp">
-
-                                    <ImageView
-                                        android:id="@+id/dht20_image"
-                                        android:layout_width="1dp"
-                                        android:layout_height="1dp"
-                                        android:src="@drawable/ic_temperature"
-                                        android:layout_marginBottom="1dp" />
-
-                                    <TextView
-                                        android:id="@+id/dht20_title"
-                                        android:layout_width="match_parent"
-                                        android:layout_height="wrap_content"
-                                        android:gravity="center"
-                                        android:text="@string/dht20"
-                                        android:textColor="#FFFFFF"
-                                        android:textSize="20sp"
-                                        android:textStyle="bold"
-                                        android:layout_marginBottom="1dp" />
-
-                                    <TextView
-                                        android:id="@+id/dht20_description"
-                                        android:layout_width="match_parent"
-                                        android:layout_height="wrap_content"
-                                        android:text="@string/sensor_description"
-                                        android:textColor="#919193"
-                                        android:textSize="14sp"
-                                        android:gravity="center" />
-                                </LinearLayout>
-                                
-                                <ImageButton
-                                    android:id="@+id/remove_dht20_button"
-                                    android:layout_width="24dp"
-                                    android:layout_height="24dp"
-                                    android:layout_gravity="top|end"
-                                    android:layout_margin="8dp"
-                                    android:background="@android:color/transparent"
-                                    android:contentDescription="Remove sensor"
-                                    android:src="@drawable/ic_remove" />
-                            </FrameLayout>
-                        </androidx.cardview.widget.CardView>
-
-                        <!-- Light Sensor Card -->
-                        <androidx.cardview.widget.CardView
-                            android:id="@+id/light_card"
-                            android:layout_width="0dp"
-                            android:layout_height="0dp"
-                            android:layout_weight="1"
-                            app:cardCornerRadius="20dp"
-                            app:cardBackgroundColor="#1C1C1E">
-
-                            <FrameLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent">
-                                
-                                <LinearLayout
-                                    android:id="@+id/light_container"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:orientation="vertical"
-                                    android:gravity="center"
-                                    android:padding="1dp">
-
-                                    <ImageView
-                                        android:id="@+id/light_image"
-                                        android:layout_width="1dp"
-                                        android:layout_height="1dp"
-                                        android:src="@drawable/ic_light"
-                                        android:layout_marginBottom="1dp" />
-
-                                    <TextView
-                                        android:id="@+id/light_title"
-                                        android:layout_width="match_parent"
-                                        android:layout_height="wrap_content"
-                                        android:gravity="center"
-                                        android:text="@string/light_sensor"
-                                        android:textColor="#FFFFFF"
-                                        android:textSize="20sp"
-                                        android:textStyle="bold"
-                                        android:layout_marginBottom="1dp" />
-
-                                    <TextView
-                                        android:id="@+id/light_description"
-                                        android:layout_width="match_parent"
-                                        android:layout_height="wrap_content"
-                                        android:text="@string/sensor_description"
-                                        android:textColor="#919193"
-                                        android:textSize="14sp"
-                                        android:gravity="center" />
-                                </LinearLayout>
-                                
-                                <ImageButton
-                                    android:id="@+id/remove_light_button"
-                                    android:layout_width="24dp"
-                                    android:layout_height="24dp"
-                                    android:layout_gravity="top|end"
-                                    android:layout_margin="8dp"
-                                    android:background="@android:color/transparent"
-                                    android:contentDescription="Remove sensor"
-                                    android:src="@drawable/ic_remove" />
-                            </FrameLayout>
-                        </androidx.cardview.widget.CardView>
-                    </LinearLayout>
-                </LinearLayout>
-            </androidx.core.widget.NestedScrollView>
-        </LinearLayout>
     </LinearLayout>
 
-</androidx.constraintlayout.widget.ConstraintLayout> 
+</androidx.constraintlayout.widget.ConstraintLayout>

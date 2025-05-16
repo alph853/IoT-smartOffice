@@ -1,11 +1,9 @@
 <resources>
-    <string name="app_name">IoT</string>
-    <string name="general">General</string>
-    <string name="mcu">MCU</string>
-    <string name="yolo_uno_1">Yolo Uno 1</string>
-    <string name="yolo_uno_2">Yolo Uno 2</string>
-    <string name="sensor">Sensor</string>
-    <string name="dht20">DHT20</string>
-    <string name="light_sensor">Light sensor</string>
-    <string name="sensor_description">descriptionnnnnnnnnn description</string>
+    <string name="app_name">SmartOffice</string>
+    <string name="tagline">We only deliver good service. Start now!</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_control">Control</string>
+    <string name="nav_camera">Camera</string>
+    <string name="nav_notification">Notification</string>
+    <string name="nav_setting">Setting</string>
 </resources>
