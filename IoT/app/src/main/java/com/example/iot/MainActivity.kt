@@ -18,6 +18,8 @@ import android.widget.ImageButton
 import android.widget.PopupMenu
 import android.widget.GridLayout
 import android.util.TypedValue
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 
 class MainActivity : AppCompatActivity() {
 
@@ -25,6 +27,8 @@ class MainActivity : AppCompatActivity() {
     private var selectedNavIndex = 0
     private lateinit var homeScreen: ConstraintLayout
     private lateinit var fragmentContainer: FrameLayout
+    private lateinit var roomAdapter: RoomAdapter
+    private val roomList = mutableListOf<Room>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,6 +82,12 @@ class MainActivity : AppCompatActivity() {
             }
             popup.show()
         }
+
+        // Setup RecyclerView for room cards
+        val rvRooms = findViewById<RecyclerView>(R.id.rvRooms)
+        roomAdapter = RoomAdapter(roomList)
+        rvRooms.layoutManager = GridLayoutManager(this, 2)
+        rvRooms.adapter = roomAdapter
     }
     
     private fun setupNavigation() {
@@ -168,25 +178,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onMenuAdd() {
-        val container = findViewById<GridLayout>(R.id.square_container)
-        val displayWidth = resources.displayMetrics.widthPixels
-        val marginDp = 60f
-        val marginPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, marginDp, resources.displayMetrics)
-        val size = ((displayWidth - marginPx) / 2).toInt()
-        val square = View(this)
-        val params = GridLayout.LayoutParams()
-        params.width = size
-        params.height = size
-        val density = resources.displayMetrics.density
-        params.setMargins(
-            0,
-            (20 * density).toInt(),
-            (20 * density).toInt(),
-            0
-        )
-        square.layoutParams = params
-        square.background = resources.getDrawable(R.drawable.bg_square, null)
-        container.addView(square)
+        // Add a new room card and update the adapter
+        roomList.add(Room())
+        roomAdapter.notifyItemInserted(roomList.size - 1)
     }
 
     private fun onMenuRemove() {
