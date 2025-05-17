@@ -29,6 +29,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var fragmentContainer: FrameLayout
     private lateinit var roomAdapter: RoomAdapter
     private val roomList = mutableListOf<Room>()
+    private lateinit var tvActiveCount: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,6 +47,7 @@ class MainActivity : AppCompatActivity() {
         
         // Get references to home screen and fragment container
         homeScreen = findViewById(R.id.home_screen)
+        tvActiveCount = findViewById(R.id.tv_active_count)
         
         setupNavigation()
         
@@ -85,7 +87,7 @@ class MainActivity : AppCompatActivity() {
 
         // Setup RecyclerView for room cards
         val rvRooms = findViewById<RecyclerView>(R.id.rvRooms)
-        roomAdapter = RoomAdapter(roomList)
+        roomAdapter = RoomAdapter(roomList) { updateActiveCount() }
         rvRooms.layoutManager = GridLayoutManager(this, 2)
         rvRooms.adapter = roomAdapter
 
@@ -95,6 +97,13 @@ class MainActivity : AppCompatActivity() {
                 roomAdapter.setRemoveMode(false)
             }
         }
+
+        // Update active count initially
+        updateActiveCount()
+    }
+
+    private fun updateActiveCount() {
+        tvActiveCount.text = "${roomList.size} active(s)"
     }
     
     private fun setupNavigation() {
@@ -188,6 +197,7 @@ class MainActivity : AppCompatActivity() {
         // Add a new room card and update the adapter
         roomList.add(Room())
         roomAdapter.notifyItemInserted(roomList.size - 1)
+        updateActiveCount()
     }
 
     private fun onMenuRemove() {

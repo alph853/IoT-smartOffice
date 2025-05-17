@@ -12,7 +12,10 @@ import androidx.recyclerview.widget.RecyclerView
 import android.view.ViewGroup.MarginLayoutParams
 import android.widget.ImageButton
 
-class RoomAdapter(private val rooms: MutableList<Room>) : RecyclerView.Adapter<RoomAdapter.RoomViewHolder>() {
+class RoomAdapter(
+    private val rooms: MutableList<Room>,
+    private val onRoomRemoved: () -> Unit
+) : RecyclerView.Adapter<RoomAdapter.RoomViewHolder>() {
     private var _isRemoveMode = false
 
     fun setRemoveMode(enabled: Boolean) {
@@ -43,6 +46,8 @@ class RoomAdapter(private val rooms: MutableList<Room>) : RecyclerView.Adapter<R
             notifyItemRemoved(position)
             // Notify adapter of the range of items that changed
             notifyItemRangeChanged(position, rooms.size)
+            // Notify MainActivity to update active count
+            onRoomRemoved()
         }
 
         // Set card size to be square: edge = (device width - 60dp) / 2
