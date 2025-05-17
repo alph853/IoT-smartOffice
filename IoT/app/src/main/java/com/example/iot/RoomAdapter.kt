@@ -12,7 +12,7 @@ import androidx.recyclerview.widget.RecyclerView
 import android.view.ViewGroup.MarginLayoutParams
 import android.widget.ImageButton
 
-class RoomAdapter(private val rooms: List<Room>) : RecyclerView.Adapter<RoomAdapter.RoomViewHolder>() {
+class RoomAdapter(private val rooms: MutableList<Room>) : RecyclerView.Adapter<RoomAdapter.RoomViewHolder>() {
     private var _isRemoveMode = false
 
     fun setRemoveMode(enabled: Boolean) {
@@ -38,19 +38,11 @@ class RoomAdapter(private val rooms: List<Room>) : RecyclerView.Adapter<RoomAdap
 
         // Set click listener for remove button
         holder.imgRemove.setOnClickListener {
-            // TODO: Implement remove functionality
-        }
-
-        // Set click listener for the card to hide remove icon
-        holder.cardView.setOnClickListener { _ ->
-            if (_isRemoveMode) {
-                setRemoveMode(false)
-            }
-        }
-
-        // Prevent click on remove icon from triggering card click
-        holder.imgRemove.setOnClickListener { _ ->
-            // Handle remove icon click here
+            // Remove the room at this position
+            rooms.removeAt(position)
+            notifyItemRemoved(position)
+            // Notify adapter of the range of items that changed
+            notifyItemRangeChanged(position, rooms.size)
         }
 
         // Set card size to be square: edge = (device width - 60dp) / 2
