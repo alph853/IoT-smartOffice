@@ -10,8 +10,18 @@ import android.widget.TextView
 import android.widget.LinearLayout
 import androidx.recyclerview.widget.RecyclerView
 import android.view.ViewGroup.MarginLayoutParams
+import android.widget.ImageButton
 
 class RoomAdapter(private val rooms: List<Room>) : RecyclerView.Adapter<RoomAdapter.RoomViewHolder>() {
+    private var _isRemoveMode = false
+
+    fun setRemoveMode(enabled: Boolean) {
+        _isRemoveMode = enabled
+        notifyDataSetChanged()
+    }
+
+    fun isRemoveMode(): Boolean = _isRemoveMode
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RoomViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_room, parent, false)
         return RoomViewHolder(view)
@@ -22,7 +32,26 @@ class RoomAdapter(private val rooms: List<Room>) : RecyclerView.Adapter<RoomAdap
         holder.tvRoomName.text = room.name
         holder.tvRoomDesc.text = room.description
         holder.tvDeviceCount.text = "${room.deviceCount} active device(s)"
-        // Optionally set image if you have different icons
+
+        // Show/hide remove icon based on remove mode
+        holder.imgRemove.visibility = if (_isRemoveMode) View.VISIBLE else View.GONE
+
+        // Set click listener for remove button
+        holder.imgRemove.setOnClickListener {
+            // TODO: Implement remove functionality
+        }
+
+        // Set click listener for the card to hide remove icon
+        holder.cardView.setOnClickListener { _ ->
+            if (_isRemoveMode) {
+                setRemoveMode(false)
+            }
+        }
+
+        // Prevent click on remove icon from triggering card click
+        holder.imgRemove.setOnClickListener { _ ->
+            // Handle remove icon click here
+        }
 
         // Set card size to be square: edge = (device width - 60dp) / 2
         val displayMetrics = Resources.getSystem().displayMetrics
@@ -93,6 +122,7 @@ class RoomAdapter(private val rooms: List<Room>) : RecyclerView.Adapter<RoomAdap
         val tvRoomDesc: TextView = itemView.findViewById(R.id.tvRoomDesc)
         val tvDeviceCount: TextView = itemView.findViewById(R.id.tvDeviceCount)
         val imgRoom: ImageView = itemView.findViewById(R.id.imgRoom)
+        val imgRemove: ImageButton = itemView.findViewById(R.id.imgRemove)
         val cardView: View = itemView.findViewById(R.id.cardView)
         val linearLayout: LinearLayout = itemView.findViewById(R.id.linearLayout)
     }

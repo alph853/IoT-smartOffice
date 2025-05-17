@@ -88,6 +88,13 @@ class MainActivity : AppCompatActivity() {
         roomAdapter = RoomAdapter(roomList)
         rvRooms.layoutManager = GridLayoutManager(this, 2)
         rvRooms.adapter = roomAdapter
+
+        // Add click listener to root layout to hide remove button
+        findViewById<View>(R.id.main).setOnClickListener {
+            if (roomAdapter.isRemoveMode()) {
+                roomAdapter.setRemoveMode(false)
+            }
+        }
     }
     
     private fun setupNavigation() {
@@ -184,7 +191,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onMenuRemove() {
-        // TODO: Implement Remove action
+        // Toggle remove mode in the adapter
+        roomAdapter.setRemoveMode(!roomAdapter.isRemoveMode())
     }
 
     private fun onMenuModify() {

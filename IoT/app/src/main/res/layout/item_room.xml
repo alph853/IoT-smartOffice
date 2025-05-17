@@ -11,49 +11,66 @@
     card_view:cardBackgroundColor="@color/card_black"
     app:layout_constraintDimensionRatio="1:1">
 
-    <LinearLayout
-        android:id="@+id/linearLayout"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center">
+        android:layout_height="match_parent">
 
-        <ImageView
-            android:id="@+id/imgRoom"
+        <LinearLayout
+            android:id="@+id/linearLayout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <ImageView
+                android:id="@+id/imgRoom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/office_room"
+                android:contentDescription="room icon"
+                android:layout_gravity="center_horizontal" />
+
+            <TextView
+                android:id="@+id/tvRoomName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Room"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:layout_gravity="center_horizontal" />
+
+            <TextView
+                android:id="@+id/tvRoomDesc"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Building"
+                android:textColor="@color/grey"
+                android:textStyle="bold"
+                android:layout_gravity="center_horizontal" />
+
+            <TextView
+                android:id="@+id/tvDeviceCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_active_badge"
+                android:text="0 active device(s)"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_gravity="center_horizontal" />
+
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/imgRemove"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/office_room"
-            android:contentDescription="room icon"
-            android:layout_gravity="center_horizontal" />
+            android:src="@drawable/ic_close"
+            android:contentDescription="Remove room"
+            android:visibility="gone"
+            android:layout_gravity="top|end"
+            android:layout_margin="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless" />
 
-        <TextView
-            android:id="@+id/tvRoomName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Room"
-            android:textColor="#FFFFFF"
-            android:textStyle="bold"
-            android:layout_gravity="center_horizontal" />
-
-        <TextView
-            android:id="@+id/tvRoomDesc"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Building"
-            android:textColor="@color/grey"
-            android:textStyle="bold"
-            android:layout_gravity="center_horizontal" />
-
-        <TextView
-            android:id="@+id/tvDeviceCount"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_active_badge"
-            android:text="0 active device(s)"
-            android:textColor="@color/white"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:layout_gravity="center_horizontal" />
-
-    </LinearLayout>
+    </FrameLayout>
 </androidx.cardview.widget.CardView>
