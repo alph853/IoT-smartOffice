@@ -135,42 +135,25 @@
 <!--            app:layout_constraintEnd_toEndOf="parent" />-->
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+    
+    <!-- Fragment container for other tabs -->
+    <FrameLayout
+        android:id="@+id/fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@+id/bottom_navigation"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <LinearLayout
+    <include
         android:id="@+id/bottom_navigation"
+        layout="@layout/navigation_bar"
         android:layout_width="match_parent"
         android:layout_height="80dp"
-        android:background="@drawable/bg_navbar"
-        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <!-- Home -->
-        <include
-            android:id="@+id/nav_home"
-            layout="@layout/item_nav" />
-
-        <!-- Control -->
-        <include
-            android:id="@+id/nav_control"
-            layout="@layout/item_nav" />
-
-        <!-- Camera -->
-        <include
-            android:id="@+id/nav_camera"
-            layout="@layout/item_nav" />
-
-        <!-- Notification -->
-        <include
-            android:id="@+id/nav_notification"
-            layout="@layout/item_nav" />
-
-        <!-- Setting -->
-        <include
-            android:id="@+id/nav_setting"
-            layout="@layout/item_nav" />
-
-    </LinearLayout>
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

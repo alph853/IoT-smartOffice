@@ -20,15 +20,14 @@ import android.widget.GridLayout
 import android.util.TypedValue
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import android.content.Intent
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var navItems: List<View>
-    private var selectedNavIndex = 0
+    private lateinit var navigationBar: NavigationBar
     private lateinit var homeScreen: ConstraintLayout
     private lateinit var fragmentContainer: FrameLayout
     private lateinit var roomAdapter: RoomAdapter
-    private val roomList = mutableListOf<Room>()
     private lateinit var tvActiveCount: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,16 +46,25 @@ class MainActivity : AppCompatActivity() {
         
         // Get references to home screen and fragment container
         homeScreen = findViewById(R.id.home_screen)
+        fragmentContainer = findViewById(R.id.fragment_container) ?: FrameLayout(this)
         tvActiveCount = findViewById(R.id.tv_active_count)
         
-        setupNavigation()
+        // Setup navigation bar
+        navigationBar = NavigationBar(this)
+        navigationBar.setup()
+        navigationBar.setOnItemSelectedListener { index ->
+            showContent(index)
+        }
         
         // Ensure Home UI is visible at startup
         homeScreen.visibility = View.VISIBLE
         
-        // Override selectedNavIndex since Home tab should be selected by default
-        selectedNavIndex = 0
-        updateNavItemState(0, true)
+        // Get selected tab from intent (if any)
+        val selectedTab = intent.getIntExtra("selected_tab", 0)
+        
+        // Select the appropriate tab
+        navigationBar.setSelectedIndex(selectedTab)
+        showContent(selectedTab)
 
         // Setup menu button event
         val btnMenu = findViewById<ImageButton>(R.id.btn_menu)
@@ -87,7 +95,11 @@ class MainActivity : AppCompatActivity() {
 
         // Setup RecyclerView for room cards
         val rvRooms = findViewById<RecyclerView>(R.id.rvRooms)
-        roomAdapter = RoomAdapter(roomList) { updateActiveCount() }
+        roomAdapter = RoomAdapter(
+            RoomManager.getRooms(),
+            { updateActiveCount() },
+            { room -> onRoomCardClicked(room) }
+        )
         rvRooms.layoutManager = GridLayoutManager(this, 2)
         rvRooms.adapter = roomAdapter
 
@@ -105,74 +117,14 @@ class MainActivity : AppCompatActivity() {
         updateActiveCount()
     }
 
+    private fun onRoomCardClicked(room: Room) {
+        // Launch the RoomDetailActivity with room information
+        val intent = RoomDetailActivity.newIntent(this, room)
+        startActivity(intent)
+    }
+
     private fun updateActiveCount() {
-        tvActiveCount.text = "${roomList.size} active(s)"
-    }
-    
-    private fun setupNavigation() {
-        // Find all navigation items
-        navItems = listOf(
-            findViewById(R.id.nav_home),
-            findViewById(R.id.nav_control),
-            findViewById(R.id.nav_camera),
-            findViewById(R.id.nav_notification),
-            findViewById(R.id.nav_setting)
-        )
-        
-        // Set up icons and text
-        setupNavItem(navItems[0], R.drawable.nav_home_selector, R.string.nav_home)
-        setupNavItem(navItems[1], R.drawable.nav_control_selector, R.string.nav_control)
-        setupNavItem(navItems[2], R.drawable.nav_camera_selector, R.string.nav_camera)
-        setupNavItem(navItems[3], R.drawable.nav_notification_selector, R.string.nav_notification)
-        setupNavItem(navItems[4], R.drawable.nav_setting_selector, R.string.nav_setting)
-        
-        // Initially set all items to unselected state
-        navItems.forEachIndexed { index, _ ->
-            updateNavItemState(index, false)
-        }
-        
-        // Set up click listeners
-        navItems.forEachIndexed { index, item ->
-            item.setOnClickListener {
-                selectNavItem(index)
-            }
-        }
-    }
-    
-    private fun setupNavItem(navItem: View, iconResId: Int, titleResId: Int) {
-        val icon = navItem.findViewById<ImageView>(R.id.icon)
-        val title = navItem.findViewById<TextView>(R.id.title)
-        
-        icon.setImageResource(iconResId)
-        title.setText(titleResId)
-    }
-    
-    private fun selectNavItem(index: Int) {
-        // Skip if already selected
-        if (index == selectedNavIndex) return
-        
-        // Update UI state
-        updateNavItemState(selectedNavIndex, false)
-        updateNavItemState(index, true)
-        
-        // Update selected index
-        selectedNavIndex = index
-        
-        // Show corresponding view/fragment
-        showContent(index)
-    }
-    
-    private fun updateNavItemState(index: Int, isSelected: Boolean) {
-        val navItem = navItems[index]
-        val icon = navItem.findViewById<ImageView>(R.id.icon)
-        val title = navItem.findViewById<TextView>(R.id.title)
-        
-        icon.isSelected = isSelected
-        title.isSelected = isSelected
-        
-        // Apply alpha to reflect selection state
-        icon.alpha = if (isSelected) 1.0f else 0.5f
-        title.alpha = if (isSelected) 1.0f else 0.5f
+        tvActiveCount.text = "${RoomManager.getRoomCount()} active(s)"
     }
     
     private fun showContent(index: Int) {
@@ -192,14 +144,18 @@ class MainActivity : AppCompatActivity() {
                 4 -> SettingFragment.newInstance()
                 else -> ControlFragment.newInstance()
             }
-
+            
+            // Replace the fragment
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .commit()
         }
     }
 
     private fun onMenuAdd() {
         // Add a new room card and update the adapter
-        roomList.add(Room())
-        roomAdapter.notifyItemInserted(roomList.size - 1)
+        RoomManager.addRoom(Room())
+        roomAdapter.notifyItemInserted(RoomManager.getRoomCount() - 1)
         updateActiveCount()
     }
 
@@ -211,5 +167,18 @@ class MainActivity : AppCompatActivity() {
     private fun onMenuModify() {
         // Toggle modify mode in the adapter
         roomAdapter.setModifyMode(!roomAdapter.isModifyMode())
+    }
+    
+    // Handle when this activity resumes (e.g., when returning from other activities)
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        
+        // If coming back via HOME tab (no specific tab selected in intent)
+        if (!intent.hasExtra("selected_tab")) {
+            // Ensure we're showing the home screen and the home tab is selected
+            navigationBar.setSelectedIndex(0)
+            showContent(0)
+        }
     }
 }

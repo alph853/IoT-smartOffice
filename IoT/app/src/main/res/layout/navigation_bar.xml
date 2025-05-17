@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/bottom_navigation"
+    android:layout_width="match_parent"
+    android:layout_height="80dp"
+    android:background="@drawable/bg_navbar"
+    android:orientation="horizontal">
+
+    <!-- Home -->
+    <include
+        android:id="@+id/nav_home"
+        layout="@layout/item_nav" />
+
+    <!-- Control -->
+    <include
+        android:id="@+id/nav_control"
+        layout="@layout/item_nav" />
+
+    <!-- Camera -->
+    <include
+        android:id="@+id/nav_camera"
+        layout="@layout/item_nav" />
+
+    <!-- Notification -->
+    <include
+        android:id="@+id/nav_notification"
+        layout="@layout/item_nav" />
+
+    <!-- Setting -->
+    <include
+        android:id="@+id/nav_setting"
+        layout="@layout/item_nav" />
+
+</LinearLayout> 

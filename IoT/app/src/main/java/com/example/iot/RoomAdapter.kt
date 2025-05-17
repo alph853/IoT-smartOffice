@@ -17,7 +17,8 @@ import android.widget.Button
 
 class RoomAdapter(
     private val rooms: MutableList<Room>,
-    private val onRoomRemoved: () -> Unit
+    private val onRoomRemoved: () -> Unit,
+    private val onRoomClicked: ((Room) -> Unit)? = null
 ) : RecyclerView.Adapter<RoomAdapter.RoomViewHolder>() {
     private var _isRemoveMode = false
     private var _isModifyMode = false
@@ -56,12 +57,19 @@ class RoomAdapter(
         // Set click listener for remove button
         holder.imgRemove.setOnClickListener {
             // Remove the room at this position
-            rooms.removeAt(position)
+            RoomManager.removeRoom(position)
             notifyItemRemoved(position)
             // Notify adapter of the range of items that changed
-            notifyItemRangeChanged(position, rooms.size)
+            notifyItemRangeChanged(position, RoomManager.getRoomCount())
             // Notify MainActivity to update active count
             onRoomRemoved()
+        }
+        
+        // Set card click listener if we have a callback
+        holder.cardView.setOnClickListener {
+            if (!_isRemoveMode && !_isModifyMode) {
+                onRoomClicked?.invoke(room)
+            }
         }
 
         // Set click listeners for text modification
