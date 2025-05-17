@@ -16,6 +16,8 @@ import androidx.fragment.app.Fragment
 import com.example.iot.fragments.*
 import android.widget.ImageButton
 import android.widget.PopupMenu
+import android.widget.GridLayout
+import android.util.TypedValue
 
 class MainActivity : AppCompatActivity() {
 
@@ -60,15 +62,15 @@ class MainActivity : AppCompatActivity() {
             popup.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
                     0 -> {
-                        // Handle Add
+                        onMenuAdd()
                         true
                     }
                     1 -> {
-                        // Handle Remove
+                        onMenuRemove()
                         true
                     }
                     2 -> {
-                        // Handle Modify
+                        onMenuModify()
                         true
                     }
                     else -> false
@@ -163,5 +165,35 @@ class MainActivity : AppCompatActivity() {
             }
 
         }
+    }
+
+    private fun onMenuAdd() {
+        val container = findViewById<GridLayout>(R.id.square_container)
+        val displayWidth = resources.displayMetrics.widthPixels
+        val marginDp = 60f
+        val marginPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, marginDp, resources.displayMetrics)
+        val size = ((displayWidth - marginPx) / 2).toInt()
+        val square = View(this)
+        val params = GridLayout.LayoutParams()
+        params.width = size
+        params.height = size
+        val density = resources.displayMetrics.density
+        params.setMargins(
+            0,
+            (20 * density).toInt(),
+            (20 * density).toInt(),
+            0
+        )
+        square.layoutParams = params
+        square.background = resources.getDrawable(R.drawable.bg_square, null)
+        container.addView(square)
+    }
+
+    private fun onMenuRemove() {
+        // TODO: Implement Remove action
+    }
+
+    private fun onMenuModify() {
+        // TODO: Implement Modify action
     }
 }
