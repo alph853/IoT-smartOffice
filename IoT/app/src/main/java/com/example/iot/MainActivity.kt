@@ -14,6 +14,8 @@ import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.fragment.app.Fragment
 import com.example.iot.fragments.*
+import android.widget.ImageButton
+import android.widget.PopupMenu
 
 class MainActivity : AppCompatActivity() {
 
@@ -27,7 +29,7 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         supportActionBar?.hide()
         setContentView(R.layout.activity_main)
-        
+
         // Apply window insets properly
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -38,17 +40,42 @@ class MainActivity : AppCompatActivity() {
         
         // Get references to home screen and fragment container
         homeScreen = findViewById(R.id.home_screen)
-        fragmentContainer = findViewById(R.id.fragment_container)
         
         setupNavigation()
         
         // Ensure Home UI is visible at startup
         homeScreen.visibility = View.VISIBLE
-        fragmentContainer.visibility = View.GONE
         
         // Override selectedNavIndex since Home tab should be selected by default
         selectedNavIndex = 0
         updateNavItemState(0, true)
+
+        // Setup menu button event
+        val btnMenu = findViewById<ImageButton>(R.id.btn_menu)
+        btnMenu.setOnClickListener { v ->
+            val popup = PopupMenu(this, v)
+            popup.menu.add(0, 0, 0, "Add")
+            popup.menu.add(0, 1, 1, "Remove")
+            popup.menu.add(0, 2, 2, "Modify")
+            popup.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    0 -> {
+                        // Handle Add
+                        true
+                    }
+                    1 -> {
+                        // Handle Remove
+                        true
+                    }
+                    2 -> {
+                        // Handle Modify
+                        true
+                    }
+                    else -> false
+                }
+            }
+            popup.show()
+        }
     }
     
     private fun setupNavigation() {
@@ -134,10 +161,7 @@ class MainActivity : AppCompatActivity() {
                 4 -> SettingFragment.newInstance()
                 else -> ControlFragment.newInstance()
             }
-            
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, fragment)
-                .commit()
+
         }
     }
 }
