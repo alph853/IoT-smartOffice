@@ -12,10 +12,15 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import android.widget.PopupMenu
 
 class RoomDetailActivity : AppCompatActivity() {
 
     private lateinit var navigationBar: NavigationBar
+    private lateinit var mcuAdapter: MCUAdapter
+    private lateinit var tvActiveCount: TextView
 
     companion object {
         private const val EXTRA_ROOM_NAME = "extra_room_name"
@@ -52,14 +57,92 @@ class RoomDetailActivity : AppCompatActivity() {
 
         // Set room name in the header
         findViewById<TextView>(R.id.tvDetailRoomName).text = roomName
+        tvActiveCount = findViewById(R.id.tv_active_count)
 
         // Setup back button
         findViewById<View>(R.id.backButton).setOnClickListener {
             finish() // Close this activity and return to previous screen
         }
         
+        // Setup menu button event
+        val btnMenu = findViewById<ImageButton>(R.id.btn_menu)
+        btnMenu.setOnClickListener { v ->
+            val popup = PopupMenu(this, v)
+            popup.menu.add(0, 0, 0, "Add")
+            popup.menu.add(0, 1, 1, "Remove")
+            popup.menu.add(0, 2, 2, "Modify")
+            popup.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    0 -> {
+                        onMenuAdd()
+                        true
+                    }
+                    1 -> {
+                        onMenuRemove()
+                        true
+                    }
+                    2 -> {
+                        onMenuModify()
+                        true
+                    }
+                    else -> false
+                }
+            }
+            popup.show()
+        }
+        
+        // Setup RecyclerView for MCU cards
+        val rvMCUs = findViewById<RecyclerView>(R.id.rvMCUs)
+        mcuAdapter = MCUAdapter(
+            MCUManager.getMCUs(),
+            { updateActiveCount() },
+            { mcu -> onMCUCardClicked(mcu) }
+        )
+        rvMCUs.layoutManager = GridLayoutManager(this, 2)
+        rvMCUs.adapter = mcuAdapter
+        
+        // Add click listener to root layout to hide remove button
+        findViewById<View>(R.id.detail_main).setOnClickListener {
+            if (mcuAdapter.isRemoveMode()) {
+                mcuAdapter.setRemoveMode(false)
+            }
+            if (mcuAdapter.isModifyMode()) {
+                mcuAdapter.setModifyMode(false)
+            }
+        }
+        
+        // Update active count initially
+        updateActiveCount()
+        
         // Setup navigation bar
         setupNavigationBar()
+    }
+    
+    private fun updateActiveCount() {
+        val onlineCount = MCUManager.getMCUs().count { it.status.equals("Online", ignoreCase = true) }
+        tvActiveCount.text = "$onlineCount active(s)"
+    }
+    
+    private fun onMCUCardClicked(mcu: MCU) {
+        // Handle MCU card click here
+        // Could navigate to another screen showing sensors or detailed info
+    }
+    
+    private fun onMenuAdd() {
+        // Add a new MCU card and update the adapter
+        MCUManager.addMCU(MCU())
+        mcuAdapter.notifyItemInserted(MCUManager.getMCUCount() - 1)
+        updateActiveCount()
+    }
+
+    private fun onMenuRemove() {
+        // Toggle remove mode in the adapter
+        mcuAdapter.setRemoveMode(!mcuAdapter.isRemoveMode())
+    }
+
+    private fun onMenuModify() {
+        // Toggle modify mode in the adapter
+        mcuAdapter.setModifyMode(!mcuAdapter.isModifyMode())
     }
     
     private fun setupNavigationBar() {
