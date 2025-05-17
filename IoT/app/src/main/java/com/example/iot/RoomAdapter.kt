@@ -11,19 +11,31 @@ import android.widget.LinearLayout
 import androidx.recyclerview.widget.RecyclerView
 import android.view.ViewGroup.MarginLayoutParams
 import android.widget.ImageButton
+import android.app.AlertDialog
+import android.widget.EditText
+import android.widget.Button
 
 class RoomAdapter(
     private val rooms: MutableList<Room>,
     private val onRoomRemoved: () -> Unit
 ) : RecyclerView.Adapter<RoomAdapter.RoomViewHolder>() {
     private var _isRemoveMode = false
+    private var _isModifyMode = false
 
     fun setRemoveMode(enabled: Boolean) {
         _isRemoveMode = enabled
+        _isModifyMode = false // Disable modify mode when remove mode is enabled
+        notifyDataSetChanged()
+    }
+
+    fun setModifyMode(enabled: Boolean) {
+        _isModifyMode = enabled
+        _isRemoveMode = false // Disable remove mode when modify mode is enabled
         notifyDataSetChanged()
     }
 
     fun isRemoveMode(): Boolean = _isRemoveMode
+    fun isModifyMode(): Boolean = _isModifyMode
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RoomViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_room, parent, false)
@@ -38,6 +50,8 @@ class RoomAdapter(
 
         // Show/hide remove icon based on remove mode
         holder.imgRemove.visibility = if (_isRemoveMode) View.VISIBLE else View.GONE
+        // Show/hide edit icon based on modify mode
+        holder.imgEdit.visibility = if (_isModifyMode) View.VISIBLE else View.GONE
 
         // Set click listener for remove button
         holder.imgRemove.setOnClickListener {
@@ -48,6 +62,19 @@ class RoomAdapter(
             notifyItemRangeChanged(position, rooms.size)
             // Notify MainActivity to update active count
             onRoomRemoved()
+        }
+
+        // Set click listeners for text modification
+        if (_isModifyMode) {
+            holder.tvRoomName.setOnClickListener {
+                showEditDialog(holder.tvRoomName, position, true)
+            }
+            holder.tvRoomDesc.setOnClickListener {
+                showEditDialog(holder.tvRoomDesc, position, false)
+            }
+        } else {
+            holder.tvRoomName.setOnClickListener(null)
+            holder.tvRoomDesc.setOnClickListener(null)
         }
 
         // Set card size to be square: edge = (device width - 60dp) / 2
@@ -112,6 +139,37 @@ class RoomAdapter(
         )
     }
 
+    private fun showEditDialog(textView: TextView, position: Int, isRoomName: Boolean) {
+        val context = textView.context
+        val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_edit, null)
+        val editText = dialogView.findViewById<EditText>(R.id.editText)
+        editText.setText(textView.text)
+        
+        val dialog = AlertDialog.Builder(context)
+            .setTitle(if (isRoomName) "Edit Room Name" else "Edit Building")
+            .setView(dialogView)
+            .create()
+        
+        dialogView.findViewById<Button>(R.id.btnConfirm).setOnClickListener {
+            val newText = editText.text.toString()
+            if (newText.isNotEmpty()) {
+                textView.text = newText
+                if (isRoomName) {
+                    rooms[position].name = newText
+                } else {
+                    rooms[position].description = newText
+                }
+            }
+            dialog.dismiss()
+        }
+        
+        dialogView.findViewById<Button>(R.id.btnCancel).setOnClickListener {
+            dialog.dismiss()
+        }
+        
+        dialog.show()
+    }
+
     override fun getItemCount(): Int = rooms.size
 
     class RoomViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -120,6 +178,7 @@ class RoomAdapter(
         val tvDeviceCount: TextView = itemView.findViewById(R.id.tvDeviceCount)
         val imgRoom: ImageView = itemView.findViewById(R.id.imgRoom)
         val imgRemove: ImageButton = itemView.findViewById(R.id.imgRemove)
+        val imgEdit: ImageButton = itemView.findViewById(R.id.imgEdit)
         val cardView: View = itemView.findViewById(R.id.cardView)
         val linearLayout: LinearLayout = itemView.findViewById(R.id.linearLayout)
     }

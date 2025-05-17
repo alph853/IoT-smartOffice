@@ -1,7 +1,7 @@
 package com.example.iot
 
 data class Room(
-    val name: String = "Room",
-    val description: String = "Building",
+    var name: String = "Room",
+    var description: String = "Building",
     val deviceCount: Int = 0
 ) 

@@ -96,6 +96,9 @@ class MainActivity : AppCompatActivity() {
             if (roomAdapter.isRemoveMode()) {
                 roomAdapter.setRemoveMode(false)
             }
+            if (roomAdapter.isModifyMode()) {
+                roomAdapter.setModifyMode(false)
+            }
         }
 
         // Update active count initially
@@ -206,6 +209,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onMenuModify() {
-        // TODO: Implement Modify action
+        // Toggle modify mode in the adapter
+        roomAdapter.setModifyMode(!roomAdapter.isModifyMode())
     }
 }
