@@ -9,4 +9,5 @@
     <color name="background_black">#000000</color>
     <color name="selected_item">#3DFFFFFF</color>
     <color name="red">#FF0000</color>
+    <color name="divider">#2A2A2A</color>
 </resources>

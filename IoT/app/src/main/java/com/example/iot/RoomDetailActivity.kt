@@ -124,14 +124,25 @@ class RoomDetailActivity : AppCompatActivity() {
     }
     
     private fun onMCUCardClicked(mcu: MCU) {
+        // Set up the update listener before launching MCU detail screen
+        MCUDetailActivity.setOnMCUUpdateListener { updatedMCU ->
+            // Find the position of the updated MCU in the adapter
+            val position = MCUManager.getMCUs().indexOf(updatedMCU)
+            if (position != -1) {
+                // Update the RecyclerView item
+                mcuAdapter.notifyItemChanged(position)
+            }
+        }
+        
         // Navigate to MCU detail screen
         val intent = MCUDetailActivity.newIntent(this, mcu)
         startActivity(intent)
     }
     
     private fun onMenuAdd() {
-        // Add a new MCU card and update the adapter
-        MCUManager.addMCU(MCU())
+        // Create a new MCU with default values
+        val newMCU = MCU() // This will use the new default values we defined
+        MCUManager.addMCU(newMCU)
         mcuAdapter.notifyItemInserted(MCUManager.getMCUCount() - 1)
         updateActiveCount()
     }
@@ -169,5 +180,11 @@ class RoomDetailActivity : AppCompatActivity() {
                 finish()
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Clean up the callback when the activity is destroyed
+        MCUDetailActivity.removeOnMCUUpdateListener()
     }
 } 

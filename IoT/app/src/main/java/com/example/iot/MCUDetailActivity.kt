@@ -10,19 +10,53 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
+import android.app.AlertDialog
+import android.widget.EditText
+import android.widget.Button
 
 class MCUDetailActivity : AppCompatActivity() {
 
     private lateinit var navigationBar: NavigationBar
+    private lateinit var mcu: MCU
+    private lateinit var originalMCU: MCU
 
     companion object {
         private const val EXTRA_MCU_NAME = "extra_mcu_name"
         private const val EXTRA_MCU_STATUS = "extra_mcu_status"
+        private const val EXTRA_MCU_DESCRIPTION = "extra_mcu_description"
+        private const val EXTRA_MCU_MODE = "extra_mcu_mode"
+        private const val EXTRA_MCU_LOCATION = "extra_mcu_location"
+        private const val EXTRA_MCU_REGISTER_AT = "extra_mcu_register_at"
+        private const val EXTRA_MCU_MAC_ADDRESS = "extra_mcu_mac_address"
+        private const val EXTRA_MCU_FIRMWARE_VERSION = "extra_mcu_firmware_version"
+        private const val EXTRA_MCU_LAST_SEEN_AS = "extra_mcu_last_seen_as"
+        private const val EXTRA_MCU_MODEL = "extra_mcu_model"
+
+        // Static callback field to handle MCU updates
+        private var onMCUUpdateListener: ((MCU) -> Unit)? = null
+
+        // Method to set the callback
+        fun setOnMCUUpdateListener(listener: (MCU) -> Unit) {
+            onMCUUpdateListener = listener
+        }
+
+        // Method to remove the callback
+        fun removeOnMCUUpdateListener() {
+            onMCUUpdateListener = null
+        }
 
         fun newIntent(context: Context, mcu: MCU): Intent {
             return Intent(context, MCUDetailActivity::class.java).apply {
                 putExtra(EXTRA_MCU_NAME, mcu.name)
                 putExtra(EXTRA_MCU_STATUS, mcu.status)
+                putExtra(EXTRA_MCU_DESCRIPTION, mcu.description)
+                putExtra(EXTRA_MCU_MODE, mcu.mode)
+                putExtra(EXTRA_MCU_LOCATION, mcu.location)
+                putExtra(EXTRA_MCU_REGISTER_AT, mcu.registerAt)
+                putExtra(EXTRA_MCU_MAC_ADDRESS, mcu.macAddress)
+                putExtra(EXTRA_MCU_FIRMWARE_VERSION, mcu.firmwareVersion)
+                putExtra(EXTRA_MCU_LAST_SEEN_AS, mcu.lastSeenAs)
+                putExtra(EXTRA_MCU_MODEL, mcu.model)
             }
         }
     }
@@ -41,11 +75,36 @@ class MCUDetailActivity : AppCompatActivity() {
         }
 
         // Get MCU details from intent
-        val mcuName = intent.getStringExtra(EXTRA_MCU_NAME) ?: "MCU"
-        val mcuStatus = intent.getStringExtra(EXTRA_MCU_STATUS) ?: "Unknown"
+        val mcuName = intent.getStringExtra(EXTRA_MCU_NAME) ?: return finish()
+        
+        // Try to get the existing MCU from MCUManager
+        val existingMCU = MCUManager.getMCUByName(mcuName)
+        
+        if (existingMCU != null) {
+            // Use the existing MCU if found
+            mcu = existingMCU.copy()
+            originalMCU = existingMCU
+        } else {
+            // Create new MCU with values from intent
+            mcu = MCU(
+                name = mcuName,
+                status = intent.getStringExtra(EXTRA_MCU_STATUS) ?: "Offline",
+                description = intent.getStringExtra(EXTRA_MCU_DESCRIPTION) ?: "New Device",
+                mode = intent.getStringExtra(EXTRA_MCU_MODE) ?: "Manual",
+                location = intent.getStringExtra(EXTRA_MCU_LOCATION) ?: "Not set",
+                registerAt = intent.getStringExtra(EXTRA_MCU_REGISTER_AT) ?: "Not registered",
+                macAddress = intent.getStringExtra(EXTRA_MCU_MAC_ADDRESS) ?: "Not set",
+                firmwareVersion = intent.getStringExtra(EXTRA_MCU_FIRMWARE_VERSION) ?: "1.0.0",
+                lastSeenAs = intent.getStringExtra(EXTRA_MCU_LAST_SEEN_AS) ?: "Never",
+                model = intent.getStringExtra(EXTRA_MCU_MODEL) ?: "Default Model"
+            )
+            // Add the new MCU to manager if it doesn't exist
+            MCUManager.addMCU(mcu)
+            originalMCU = mcu.copy()
+        }
 
         // Set MCU name in the header
-        findViewById<TextView>(R.id.tvDetailMCUName).text = mcuName
+        findViewById<TextView>(R.id.tvDetailMCUName).text = mcu.name
 
         // Setup back button
         findViewById<View>(R.id.backButton).setOnClickListener {
@@ -54,6 +113,151 @@ class MCUDetailActivity : AppCompatActivity() {
 
         // Setup navigation bar
         setupNavigationBar()
+
+        // Setup all clickable items
+        setupClickableItems()
+
+        // Display MCU information
+        displayMCUInfo()
+    }
+
+    private fun setupClickableItems() {
+        // Connected sensor section
+        findViewById<View>(R.id.connectedSensorLayout).setOnClickListener {
+            // Navigate to connected sensor screen
+            // TODO: Implement navigation to connected sensor screen
+        }
+
+        // MCU Info section
+        findViewById<View>(R.id.nameLayout).setOnClickListener {
+            showEditDialog("Name", mcu.name) { newValue ->
+                mcu.name = newValue
+                findViewById<TextView>(R.id.tvName).text = newValue
+                findViewById<TextView>(R.id.tvDetailMCUName).text = newValue
+                saveMCUChanges()
+            }
+        }
+
+        findViewById<View>(R.id.descriptionLayout).setOnClickListener {
+            showEditDialog("Description", mcu.description) { newValue ->
+                mcu.description = newValue
+                findViewById<TextView>(R.id.tvDescription).text = newValue
+                saveMCUChanges()
+            }
+        }
+
+        findViewById<View>(R.id.modeLayout).setOnClickListener {
+            showModeDialog()
+        }
+
+        findViewById<View>(R.id.locationLayout).setOnClickListener {
+            showEditDialog("Location", mcu.location) { newValue ->
+                mcu.location = newValue
+                findViewById<TextView>(R.id.tvLocation).text = newValue
+                saveMCUChanges()
+            }
+        }
+
+        // Technical Info section
+        findViewById<View>(R.id.registerAtLayout).setOnClickListener {
+            showEditDialog("Register at", mcu.registerAt) { newValue ->
+                mcu.registerAt = newValue
+                findViewById<TextView>(R.id.tvRegisterAt).text = newValue
+                saveMCUChanges()
+            }
+        }
+
+        findViewById<View>(R.id.macAddressLayout).setOnClickListener {
+            showEditDialog("Mac address", mcu.macAddress) { newValue ->
+                mcu.macAddress = newValue
+                findViewById<TextView>(R.id.tvMacAddress).text = newValue
+                saveMCUChanges()
+            }
+        }
+
+        findViewById<View>(R.id.firmwareVersionLayout).setOnClickListener {
+            showEditDialog("Firmware version", mcu.firmwareVersion) { newValue ->
+                mcu.firmwareVersion = newValue
+                findViewById<TextView>(R.id.tvFirmwareVersion).text = newValue
+                saveMCUChanges()
+            }
+        }
+
+        findViewById<View>(R.id.lastSeenAsLayout).setOnClickListener {
+            showEditDialog("Last seen as", mcu.lastSeenAs) { newValue ->
+                mcu.lastSeenAs = newValue
+                findViewById<TextView>(R.id.tvLastSeenAs).text = newValue
+                saveMCUChanges()
+            }
+        }
+
+        findViewById<View>(R.id.modelLayout).setOnClickListener {
+            showEditDialog("Model", mcu.model) { newValue ->
+                mcu.model = newValue
+                findViewById<TextView>(R.id.tvModel).text = newValue
+                saveMCUChanges()
+            }
+        }
+    }
+
+    private fun displayMCUInfo() {
+        findViewById<TextView>(R.id.tvName).text = mcu.name
+        findViewById<TextView>(R.id.tvDescription).text = mcu.description
+        findViewById<TextView>(R.id.tvMode).text = mcu.mode
+        findViewById<TextView>(R.id.tvLocation).text = mcu.location
+        findViewById<TextView>(R.id.tvRegisterAt).text = mcu.registerAt
+        findViewById<TextView>(R.id.tvMacAddress).text = mcu.macAddress
+        findViewById<TextView>(R.id.tvFirmwareVersion).text = mcu.firmwareVersion
+        findViewById<TextView>(R.id.tvLastSeenAs).text = mcu.lastSeenAs
+        findViewById<TextView>(R.id.tvModel).text = mcu.model
+    }
+
+    private fun showEditDialog(title: String, currentValue: String, onConfirm: (String) -> Unit) {
+        val dialog = AlertDialog.Builder(this, R.style.CustomAlertDialog)
+            .create()
+        
+        val dialogView = layoutInflater.inflate(R.layout.dialog_edit, null)
+        val editText = dialogView.findViewById<EditText>(R.id.editText)
+        editText.setText(currentValue)
+        
+        // Set up confirm button
+        dialogView.findViewById<Button>(R.id.btnConfirm).setOnClickListener {
+            val newValue = editText.text.toString()
+            if (newValue.isNotEmpty()) {
+                onConfirm(newValue)
+            }
+            dialog.dismiss()
+        }
+        
+        // Set up cancel button
+        dialogView.findViewById<Button>(R.id.btnCancel).setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.setTitle(title)
+        dialog.setView(dialogView)
+        dialog.show()
+    }
+
+    private fun showModeDialog() {
+        val modes = arrayOf("Manual", "Schedule", "Auto", "Remote")
+        
+        AlertDialog.Builder(this)
+            .setTitle("Select Mode")
+            .setItems(modes) { _, which ->
+                val selectedMode = modes[which]
+                mcu.mode = selectedMode
+                findViewById<TextView>(R.id.tvMode).text = selectedMode
+                saveMCUChanges()
+            }
+            .show()
+    }
+
+    private fun saveMCUChanges() {
+        MCUManager.updateMCU(originalMCU, mcu)
+        originalMCU = mcu.copy() // Update the original MCU reference
+        // Notify listeners about the MCU update
+        onMCUUpdateListener?.invoke(mcu)
     }
 
     private fun setupNavigationBar() {
@@ -79,5 +283,11 @@ class MCUDetailActivity : AppCompatActivity() {
                 finish()
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Clean up the callback when the activity is destroyed
+        removeOnMCUUpdateListener()
     }
 } 
