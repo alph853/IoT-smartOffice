@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SmartOffice</string>
+    <string name="general">General</string>
+    <string name="mcu">MCU</string>
+    <string name="sensor">Sensor</string>
+    <string name="yolo_uno_1">Yolo Uno 1</string>
+    <string name="yolo_uno_2">Yolo Uno 2</string>
+    <string name="dht20">DHT20</string>
+    <string name="light_sensor">Light Sensor</string>
+    <string name="sensor_description">Temperature and humidity sensor</string>
+    <string name="control">Control</string>
+    <string name="camera">Camera</string>
+    <string name="notification">Notification</string>
+    <string name="office_room">Office room</string>
+    <string name="room_1">Room 1</string>
+    <string name="room_2">Room 2</string>
+    <string name="living_room">Living room</string>
+    <string name="bedroom">Bedroom</string>
+    <string name="home">Home</string>
+    <string name="profile">Profile</string>
+    <string name="rooms">Rooms</string>
+    <string name="room_description">Smart room control</string>
+    <string name="settings">Settings</string>
+    <string name="status_bar">Status Bar</string>
+    <string name="header">Header</string>
+    <string name="content">Content</string>
+    <string name="nav_bar">Navigation Bar</string>
+    <string name="menu">Menu</string>
+    <string name="notifications">Notifications</string>
+    <string name="wifi">Wi-Fi</string>
+    <string name="battery">Battery</string>
+    <string name="turn_on">Turn On</string>
+    <string name="turn_off">Turn Off</string>
+    <string name="active_devices">Active devices</string>
+</resources>

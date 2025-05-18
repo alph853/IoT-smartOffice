@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    
+    <!-- Chair -->
+    <path
+        android:fillColor="#FF5252"
+        android:pathData="M22,25h8v12h-8z" />
+    <path
+        android:fillColor="#FF8A80"
+        android:pathData="M22,25h8v3h-8z" />
+    
+    <!-- Chair legs -->
+    <path
+        android:fillColor="#757575"
+        android:pathData="M22,37h2v8h-2z" />
+    <path
+        android:fillColor="#757575"
+        android:pathData="M28,37h2v8h-2z" />
+    
+    <!-- Table -->
+    <path
+        android:fillColor="#757575"
+        android:pathData="M32,30h16v3h-16z" />
+    <path
+        android:fillColor="#9E9E9E"
+        android:pathData="M32,33h16v12h-16z" />
+    <path
+        android:fillColor="#757575"
+        android:pathData="M32,33h4v12h-4z" />
+    <path
+        android:fillColor="#757575"
+        android:pathData="M44,33h4v12h-4z" />
+    
+    <!-- Ceiling light -->
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M12,10h8v8h-8z" />
+    <path
+        android:fillColor="#FFECB3"
+        android:pathData="M14,12h4v4h-4z" />
+    
+    <!-- Window -->
+    <path
+        android:fillColor="#B0BEC5"
+        android:pathData="M44,10h8v8h-8z" />
+    <path
+        android:fillColor="#ECEFF1"
+        android:pathData="M46,12h4v4h-4z" />
+    
+    <!-- Desk lamp -->
+    <path
+        android:fillColor="#757575"
+        android:pathData="M12,30h4v15h-4z" />
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M8,25h12v5h-12z" />
+    <path
+        android:fillColor="#FFECB3"
+        android:pathData="M10,27h8v1h-8z" />
+</vector> 
