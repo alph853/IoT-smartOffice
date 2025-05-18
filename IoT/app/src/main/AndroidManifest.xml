@@ -24,6 +24,9 @@
         <activity
             android:name=".RoomDetailActivity"
             android:exported="false" />
+        <activity
+            android:name=".MCUDetailActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

@@ -124,8 +124,9 @@ class RoomDetailActivity : AppCompatActivity() {
     }
     
     private fun onMCUCardClicked(mcu: MCU) {
-        // Handle MCU card click here
-        // Could navigate to another screen showing sensors or detailed info
+        // Navigate to MCU detail screen
+        val intent = MCUDetailActivity.newIntent(this, mcu)
+        startActivity(intent)
     }
     
     private fun onMenuAdd() {
