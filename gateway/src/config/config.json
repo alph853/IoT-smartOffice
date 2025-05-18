@@ -13,7 +13,49 @@
         "username": "g316u7decaqvzze7kbe1",
         "client_id": "",
         "device_id": "f5883950-2739-11f0-a3c9-ab0d8999f561",
-        "device_name": "IoT Gateway"
+        "device_name": "IoT Gateway",
+        "topics": {
+            "attributes_request": {
+                "topic": "v1/gateway/attributes",
+                "qos": 1,
+                "retain": 0,
+                "description": "Cloud sends RPC request to the device",
+                "src": "cloud",
+                "dst": "gateway"
+            },
+            "rpc": {
+                "topic": "v1/gateway/rpc",
+                "qos": 1,
+                "retain": 1,
+                "description": "Gateway sends RPC response to the cloud",
+                "src": "cloud",
+                "dst": "gateway"
+            },
+            "telemetry": {
+                "topic": "v1/gateway/telemetry",
+                "qos": 0,
+                "retain": 1,
+                "description": "Gateway publishes telemetry data to the cloud",
+                "src": "gateway",
+                "dst": "cloud"
+            },
+            "connect": {
+                "topic": "v1/gateway/connect",
+                "qos": 1,
+                "retain": 0,
+                "description": "Gateway connects to the cloud",
+                "src": "gateway",
+                "dst": "cloud"
+            },
+            "disconnect": {
+                "topic": "v1/gateway/disconnect",
+                "qos": 1,
+                "retain": 0,
+                "description": "Gateway disconnects from the cloud",
+                "src": "gateway",
+                "dst": "cloud"
+            }
+        }
     },
     "redis": {
         "host": "localhost",
@@ -22,91 +64,81 @@
     },
     "mosquitto": {
         "url": "192.168.1.100",
-        "port": 1883
+        "port": 1883,
+        "topics": {
+            "test": {
+                "topic": "test/topic",
+                "qos": 1,
+                "retain": 0,
+                "description": "Test for connection",
+                "src": "device",
+                "dst": "gateway"
+            },
+            "register_request": {
+                "topic": "gateway/register/request",
+                "qos": 1,
+                "retain": 0,
+                "description": "Device publishes its registration request to join the system",
+                "src": "device",
+                "dst": "gateway"
+            },
+            "telemetry": {
+                "topic": "gateway/telemetry/#",
+                "qos": 1,
+                "retain": 0,
+                "description": "Device publishes periodic telemetry data",
+                "src": "device",
+                "dst": "gateway"
+            },
+            "register_response": {
+                "topic": "gateway/register/response/{device_id}",
+                "qos": 1,
+                "retain": true,
+                "description": "Gateway replies to device registration request with credentials & config",
+                "src": "gateway",
+                "dst": "device"
+            },
+            "control_commands": {
+                "topic": "gateway/control/commands/{device_id}",
+                "qos": 1,
+                "retain": true,
+                "description": "Forward cloud commands to the device",
+                "src": "gateway",
+                "dst": "device"
+            },
+            "control_response": {
+                "topic": "gateway/control/response/#",
+                "qos": 1,
+                "retain": 0,
+                "description": "Device replies to cloud commands",
+                "src": "device",
+                "dst": "gateway"
+            }
+        }
     },
     "backend": {
-        "url": "http://192.168.1.189:8000",
+        "url": "http://192.168.1.194:8000",
         "api": {
-            "get_all_devices": "/devices",
-            "create_device": "/devices",
-            "update_device": "/devices/{device_id}",
-            "delete_device": "/devices/{device_id}"
+            "get_all_devices": {
+                "url": "/devices",
+                "method": "GET"
+            },
+            "connect_device": {
+                "url": "/devices/connect",
+                "method": "POST"
+            },
+            "create_device": {
+                "url": "/devices",
+                "method": "POST"
+            },
+            "update_device": {
+                "url": "/devices/{device_id}",
+                "method": "PATCH"
+            },
+            "delete_device": {
+                "url": "/devices/{device_id}",
+                "method": "DELETE"
+            }
         }
-    },
-    "gateway_topics": [
-        {
-            "topic": "test/topic",
-            "qos": 1,
-            "retain": 0,
-            "description": "Test for connection",
-            "src": "device",
-            "dst": "gateway"
-        },
-        {
-            "topic": "gateway/register/request",
-            "qos": 1,
-            "retain": 0,
-            "description": "Device publishes its registration request to join the system",
-            "src": "device",
-            "dst": "gateway"
-        },
-        {
-            "topic": "gateway/telemetry/#",
-            "qos": 1,
-            "retain": 0,
-            "description": "Device publishes periodic telemetry data",
-            "src": "device",
-            "dst": "gateway"
-        },
-        {
-            "topic": "gateway/register/response/{device_id}",
-            "qos": 1,
-            "retain": true,
-            "description": "Gateway replies to device registration request with credentials & config",
-            "src": "gateway",
-            "dst": "device"
-        },
-        {
-            "topic": "gateway/control/commands/{device_id}",
-            "qos": 1,
-            "retain": true,
-            "description": "Forward cloud commands to the device",
-            "src": "gateway",
-            "dst": "device"
-        },
-        {
-            "topic": "gateway/control/response/#",
-            "qos": 1,
-            "retain": 0,
-            "description": "Device replies to cloud commands",
-            "src": "device",
-            "dst": "gateway"
-        }
-    ],
-    "thingsboard_topics": [
-        {
-            "topic": "v1/devices/me/rpc/request",
-            "qos": 1,
-            "retain": 0,
-            "description": "Cloud sends RPC request to the device",
-            "src": "cloud",
-            "dst": "gateway"
-        },
-        {
-            "topic": "v1/devices/me/rpc/response",
-            "qos": 0,
-            "retain": 1,
-            "description": "Gateway sends RPC response to the cloud",
-            "src": "gateway",
-            "dst": "cloud"
-        },
-        {
-            "topic": "v1/devices/me/telemetry",
-            "qos": 0,
-            "retain": 1,
-            "description": "Gateway publishes telemetry data to the cloud",
-            "src": "gateway",
-            "dst": "cloud"
-        }
-    ]
+    }
 }

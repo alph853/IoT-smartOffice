@@ -3,18 +3,6 @@ from typing import List
 from enum import Enum
 
 
-class Sensor(BaseModel):
-    name: str
-    description: str | None = None
-    unit: str | None = None
-    type: str | None = None
-
-
-class Actuator(BaseModel):
-    name: str
-    description: str | None = None
-    type: str | None = None
-
 
 class DeviceStatus(Enum):
     ONLINE = "online"
@@ -28,28 +16,52 @@ class DeviceMode(Enum):
     AUTO = "auto"
     MANUAL = "manual"
     SCHEDULED = "scheduled"
-    OFFLINE = "offline"
     
 
 class Device(BaseModel):
     id: int
     name: str
-    mode: DeviceMode
     fw_version: str
     status: DeviceStatus
     access_token: str | None = None
     mac_addr: str
+    office_id: int
 
     class Config:
         use_enum_values = True
+
+
+class Sensor(BaseModel):
+    name: str
+    description: str | None = None
+    unit: str | None = None
+    status: DeviceStatus | None = None
+    type: str | None = None
+
+    class Config:
+        use_enum_values = True
+
+
+class Actuator(BaseModel):
+    name: str
+    description: str | None = None
+    mode: DeviceMode | None = None
+    status: DeviceStatus | None = None
+    type: str | None = None
+
+    class Config:
+        use_enum_values = True
+
 
 class DeviceRegistration(BaseModel):
     name: str
     mac_addr: str
     fw_version: str
-    model: str
+    model: str | None = None
     description: str | None = None
     office_id: int
+    gateway_id: int | None = None
+
     sensors: List[Sensor]
     actuators: List[Actuator]
 

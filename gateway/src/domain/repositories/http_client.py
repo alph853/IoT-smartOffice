@@ -26,6 +26,10 @@ class HttpClientRepository(ABC):
         pass
 
     @abstractmethod
+    async def connect_device(self, device: Device) -> Device | None:
+        pass
+
+    @abstractmethod
     async def create_device(self, device: DeviceCreate) -> Device | None:
         pass
 

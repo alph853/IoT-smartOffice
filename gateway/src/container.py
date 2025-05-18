@@ -1,3 +1,4 @@
+import asyncio
 from dependency_injector import containers, providers
 
 from src.infra.event_bus import InProcEventBus
@@ -6,37 +7,16 @@ from src.infra.scheduler import APScheduler
 from src.services.registration import RegistrationService
 from src.services.telemetry import TelemetryService
 
-from src.config import ConfigUtils
 from src.infra.http import HttpClient
 from src.infra.redis import RedisCacheClient
 
 
 class Container(containers.DeclarativeContainer):
     config = providers.Configuration()
-
-    gateway_topics = providers.Singleton(
-        ConfigUtils.get_mqtt_topics,
-        config.gateway_topics,
-    )
+    loop   = providers.Singleton(asyncio.get_event_loop)
 
     event_bus   = providers.Singleton(InProcEventBus)
 
-    thingsboard_client = providers.Singleton(
-        ThingsboardClient,
-        broker_url  = config.thingsboard.url,
-        broker_port = config.thingsboard.port.as_int(),
-        password    = config.thingsboard.password,
-        username    = config.thingsboard.username,
-        client_id   = config.thingsboard.client_id,
-        event_bus   = event_bus,
-    )
-    mosquitto_client = providers.Singleton(
-        MosquittoClient,
-        broker_url  = config.mosquitto.url,
-        broker_port = config.mosquitto.port.as_int(),
-        event_bus   = event_bus,
-        topics      = gateway_topics,
-    )
     http_client = providers.Singleton(
         HttpClient,
         url=config.backend.url,
@@ -48,6 +28,27 @@ class Container(containers.DeclarativeContainer):
         port=config.redis.port.as_int(),
         db=config.redis.db.as_int(),
         http_client=http_client,
+    )
+
+    thingsboard_client = providers.Singleton(
+        ThingsboardClient,
+        broker_url   = config.thingsboard.url,
+        broker_port  = config.thingsboard.port.as_int(),
+        password     = config.thingsboard.password,
+        username     = config.thingsboard.username,
+        client_id    = config.thingsboard.client_id,
+        device_name  = config.thingsboard.device_name,
+        event_bus    = event_bus,
+        cache_client = cache_client,
+        topics       = config.thingsboard.topics,
+        loop         = loop,
+    )
+    mosquitto_client = providers.Singleton(
+        MosquittoClient,
+        broker_url  = config.mosquitto.url,
+        broker_port = config.mosquitto.port.as_int(),
+        event_bus   = event_bus,
+        topics      = config.mosquitto.topics,
     )
 
     scheduler = providers.Singleton(

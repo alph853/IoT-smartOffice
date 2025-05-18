@@ -1,10 +1,18 @@
 from contextlib import asynccontextmanager
 import asyncio
+import sys
 from loguru import logger
 import signal
 
 from .container import Container
 from src.config import ConfigUtils
+
+
+logger.remove()
+logger.add(
+    sink=sys.stdout,
+    format="<level>{level}</level> | <cyan>{file}</cyan>:<cyan>{line}</cyan> - <level>\t{message}</level>"
+)
 
 
 @asynccontextmanager

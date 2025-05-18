@@ -2,7 +2,6 @@ import redis.asyncio as redis
 import asyncio
 from typing import List
 import json
-from pydantic import BaseModel
 
 from src.domain.models import Device
 from src.domain.repositories import CacheClientRepository, HttpClientRepository
@@ -24,20 +23,17 @@ class RedisCacheClient(CacheClientRepository):
     # -------------------------------------------------------------
 
     async def connect(self):
-        self.client = redis.Redis(host=self.host, port=self.port, db=self.db)
+        self.client = redis.Redis(host=self.host, port=self.port, db=self.db, decode_responses=True)
         await self.reset_cache()
 
         devices = await self.http_client.get_all_devices()
-        tasks = [
-            self.add_device(device) for device in devices
-        ]
-        await asyncio.gather(*tasks)
+        await asyncio.gather(*[self.add_device(device) for device in devices])
+
         logger.info(f"Connected to Redis at {self.host}:{self.port} with database {self.db}")
-        val = await self.get_all_devices()
-        logger.info(f"Devices: {val}")
 
     async def disconnect(self):
         await self.client.close()
+        logger.info(f"Redis client disconnected")
 
     # -------------------------------------------------------------
     # ------------------------- Device ----------------------------
@@ -51,26 +47,18 @@ class RedisCacheClient(CacheClientRepository):
             if device_data:
                 devices.append(Device(**json.loads(device_data)))
         return devices
-
-    async def get_device_by_mac_addr(self, mac_addr: str) -> Device | None:
-        device_id = await self.client.get(f"device:mac:{mac_addr}")
-        if device_id:
-            device = await self.get_device_by_id(device_id)
-            return device
-        return None
     
     async def get_device_by_id(self, device_id: str) -> Device | None:
-        device_data = await self.client.get(f"device:id:{device_id}")
+        key = f"device:id:{device_id}"
+        device_data = await self.client.get(key)
         if device_data:
             return Device(**json.loads(device_data))
         return None
 
     async def add_device(self, device: Device) -> Device:
         device_key    = f"device:id:{device.id}"
-        mac_index_key = f"device:mac:{device.mac_addr}"
+        await self.client.set(device_key, json.dumps(device.model_dump(exclude_none=True)))
 
-        await self.client.set(device_key, json.dumps(device.model_dump()))
-        await self.client.set(mac_index_key, device.id)
         return device
 
     async def remove_device(self, device_id: str) -> bool:

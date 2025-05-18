@@ -14,11 +14,11 @@ class CacheClientRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_device_by_mac_addr(self, mac_addr: str) -> Device | None:
+    async def get_device_by_id(self, device_id: str) -> Device:
         pass
-    
+
     @abstractmethod
-    async def add_device(self, device: Device) -> bool:
+    async def add_device(self, device: Device) -> Device:
         pass
     
     @abstractmethod

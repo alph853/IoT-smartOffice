@@ -4,8 +4,9 @@ from aiomqtt import Client, Message, MessagesIterator, MqttError
 from loguru import logger
 import asyncio
 import json
+from typing import Dict, Any
 
-from src.domain.models import MqttTopic, Entity, Topic, DeviceRegistration, Device
+from src.domain.models import DeviceRegistration, Device
 from src.domain.repositories import MqttGatewayClientRepository
 
 from src.domain.events import (
@@ -19,17 +20,15 @@ class MosquittoClient(MqttGatewayClientRepository):
                  broker_url: str,
                  broker_port: int,
                  event_bus: EventBusInterface,
-                 topics: List[MqttTopic]
+                 topics: Dict[str, Dict[str, Any]]
                  ):
         self.broker_url = broker_url
         self.broker_port = broker_port
         self.event_bus = event_bus
+        self.topics = topics
 
         self.client = None
-        self.subscribed_topics = list(filter(lambda t:
-            t.src == Entity.DEVICE and t.dst == Entity.GATEWAY,
-            topics
-        ))
+
 
     # -------------------------------------------------------------
     # ------------------------- Lifecycle -------------------------
@@ -43,13 +42,17 @@ class MosquittoClient(MqttGatewayClientRepository):
         self.client = Client(self.broker_url, self.broker_port)
         await self.client.__aenter__()
 
+        subscribed_topics = list(filter(lambda i:
+            i['src'] == "device" and i['dst'] == "gateway",
+            self.topics.values()
+        ))
         subscription_tasks = [
-            self.client.subscribe(topic=(topic.topic, topic.retain), qos=topic.qos)
-            for topic in self.subscribed_topics
+            self.client.subscribe(topic=(topic['topic'], topic['retain']), qos=topic['qos'])
+            for topic in subscribed_topics
         ]
         await asyncio.gather(*subscription_tasks)
 
-        logger.info(f"Subscribed to {len(self.subscribed_topics)} topics:\n'{'\n'.join([t.topic for t in self.subscribed_topics])}'")
+        logger.info(f"Subscribed to {len(subscribed_topics)} topics:\n'{'\n'.join([t['topic'] for t in subscribed_topics])}'")
         logger.info(f"Mosquitto broker connected at {self.broker_url}:{self.broker_port}.")
 
         await self.event_bus.subscribe(TestEvent, self._handle_test_connection)
@@ -67,8 +70,8 @@ class MosquittoClient(MqttGatewayClientRepository):
     # ------------------------- Publisher -------------------------
     # -------------------------------------------------------------
 
-    async def publish(self, topic: MqttTopic, payload: str):
-        await self.client.publish(topic.topic.value, payload, topic.qos, topic.retain)
+    async def publish(self, topic: str, payload: str):
+        await self.client.publish(topic, payload, topic.qos, topic.retain)
 
     # -------------------------------------------------------------
     # ------------------------- Utilities -------------------------
@@ -86,7 +89,7 @@ class MosquittoClient(MqttGatewayClientRepository):
             return False
 
     async def register_device(self, device: Device):
-        topic = Topic.REGISTER_RESPONSE.value.format(device_id=device.mac_addr)
+        topic = self.topics['register_response']['topic'].format(device_id=device.mac_addr)
         print(f"Registering device {device.mac_addr} with id {device.id} to topic {topic}")
         await self.client.publish(topic, f"OK,id={device.id}")
 
@@ -97,7 +100,7 @@ class MosquittoClient(MqttGatewayClientRepository):
     async def _listen(self):
         """Listen for MQTT messages"""
         try:
-            logger.info("MQTT listener started")
+            logger.info("Mosquitto MQTT listener started")
             async for msg in self.client.messages:
                 await self._process_message(msg)
         except asyncio.CancelledError:
@@ -106,9 +109,9 @@ class MosquittoClient(MqttGatewayClientRepository):
             logger.error(f"Connection lost ({e}); Reconnecting...")
             await asyncio.sleep(2)
         except Exception as e:
-            logger.error(f"Error in MQTT listener: {e}")
+            logger.error(f"Error in Mosquitto MQTT listener: {e}")
         finally:
-            logger.info("MQTT listener stopped")
+            logger.info("Mosquitto MQTT listener stopped")
 
     async def _process_message(self, msg: Message):
         """Process a single MQTT message"""
@@ -117,7 +120,7 @@ class MosquittoClient(MqttGatewayClientRepository):
 
         logger.info(f"Received message on topic {topic}: {payload}")
 
-        if topic.matches(Topic.TEST.value):
+        if topic.matches(self.topics['test']['topic']):
             event = TestEvent(payload=payload)
             await self.event_bus.publish(event)
             return
@@ -126,11 +129,11 @@ class MosquittoClient(MqttGatewayClientRepository):
         except Exception:
             event = InvalidMessageEvent(topic=str(topic), payload=payload, error="JSON parsing error")
         else:
-            if topic.matches(Topic.REGISTER_REQUEST.value):
+            if topic.matches(self.topics['register_request']['topic']):
                 event = RegisterRequestEvent(device=DeviceRegistration(**payload))
-            elif topic.matches(Topic.TELEMETRY.value):
+            elif topic.matches(self.topics['telemetry']['topic']):
                 event = TelemetryEvent(**payload)
-            elif topic.matches(Topic.CONTROL_RESPONSE.value):
+            elif topic.matches(self.topics['control_response']['topic']):
                 event = ControlResponseEvent(**payload)
             else:
                 event = InvalidMessageEvent(topic=str(topic), payload=str(payload), error="Not implemented error")

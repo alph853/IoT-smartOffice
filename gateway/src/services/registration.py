@@ -31,30 +31,21 @@ class RegistrationService:
         await self.event_bus.unsubscribe(RegisterRequestEvent, self.handle_register_request)
 
     async def handle_register_request(self, event: RegisterRequestEvent):
-        """
-        First send device provision request to the cloud,
-        then request to backend server to update the database if needed
-        and send the response to the device.
-        """
         try:
-            device = await self.cache_client.get_device_by_mac_addr(event.device.mac_addr)
-            if device:
-                logger.info(f"Device comebacks: {device}")
-                async with asyncio.TaskGroup() as tg:
-                    tg.create_task(self.http_client.update_device(device))
-                    tg.create_task(self.cloud_client.connect_device(device))
-            else:
-                logger.info(f"Device not found: {event.device.model_dump()}")
-                new_device = DeviceCreate(**event.device.model_dump(), gateway_id=self.gateway_id)
-                new_device = await self.http_client.create_device(new_device)
-                # if new_device:
-                #     provision_device = await self.cloud_client.connect_device(new_device)
-                #     device = await self.http_client.update_device(provision_device)
-                #     await self.cache_client.add_device(device)
-                # else:
-                #     logger.error(f"Failed to create device {event.device.model_dump()}")
-                #     return
-            await self.gw_client.register_device(new_device)
+            event.device.gateway_id = self.gateway_id
+            device = await self.http_client.connect_device(event.device)
+            self.cloud_client.connect_device(device),
+            tasks = await asyncio.gather(
+                self.cache_client.add_device(device),
+                self.gw_client.register_device(device),
+                return_exceptions=True
+            )
+            for task in tasks:
+                if isinstance(task, Exception):
+                    logger.error(f"Error in registration service: {task}")
+                else:
+                    logger.info(f"Success in registration service: {task}")
         except Exception as e:
             logger.error(f"Error in registration service: {e}")
             return
+

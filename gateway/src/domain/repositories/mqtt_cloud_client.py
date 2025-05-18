@@ -10,11 +10,11 @@ class MqttCloudClientRepository(ABC):
     # -------------------------------------------------------------
 
     @abstractmethod
-    def connect(self):
+    async def connect(self):
         pass
 
     @abstractmethod
-    def disconnect(self):
+    async def disconnect(self):
         pass
     
     # -------------------------------------------------------------
@@ -38,6 +38,6 @@ class MqttCloudClientRepository(ABC):
         pass
 
     @abstractmethod
-    def send_rpc_reply(self, device: Device, method: str, params: dict, qos: int = 1):
+    def send_rpc_reply(self, device: Device, request_id: str, response: dict, qos: int = 1):
         pass
     
