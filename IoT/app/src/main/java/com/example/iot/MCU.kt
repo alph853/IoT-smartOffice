@@ -10,5 +10,6 @@ data class MCU(
     var macAddress: String = "Not set",
     var firmwareVersion: String = "1.0.0",
     var lastSeenAs: String = "Never",
-    var model: String = "Default Model"
+    var model: String = "Default Model",
+    val id: String = java.util.UUID.randomUUID().toString()
 ) 

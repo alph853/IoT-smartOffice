@@ -19,8 +19,10 @@ class MCUDetailActivity : AppCompatActivity() {
     private lateinit var navigationBar: NavigationBar
     private lateinit var mcu: MCU
     private lateinit var originalMCU: MCU
+    private lateinit var currentRoom: Room
 
     companion object {
+        private const val EXTRA_MCU_ID = "extra_mcu_id"
         private const val EXTRA_MCU_NAME = "extra_mcu_name"
         private const val EXTRA_MCU_STATUS = "extra_mcu_status"
         private const val EXTRA_MCU_DESCRIPTION = "extra_mcu_description"
@@ -31,6 +33,7 @@ class MCUDetailActivity : AppCompatActivity() {
         private const val EXTRA_MCU_FIRMWARE_VERSION = "extra_mcu_firmware_version"
         private const val EXTRA_MCU_LAST_SEEN_AS = "extra_mcu_last_seen_as"
         private const val EXTRA_MCU_MODEL = "extra_mcu_model"
+        private const val EXTRA_ROOM_INDEX = "extra_room_index"
 
         // Static callback field to handle MCU updates
         private var onMCUUpdateListener: ((MCU) -> Unit)? = null
@@ -45,8 +48,9 @@ class MCUDetailActivity : AppCompatActivity() {
             onMCUUpdateListener = null
         }
 
-        fun newIntent(context: Context, mcu: MCU): Intent {
+        fun newIntent(context: Context, mcu: MCU, roomIndex: Int): Intent {
             return Intent(context, MCUDetailActivity::class.java).apply {
+                putExtra(EXTRA_MCU_ID, mcu.id)
                 putExtra(EXTRA_MCU_NAME, mcu.name)
                 putExtra(EXTRA_MCU_STATUS, mcu.status)
                 putExtra(EXTRA_MCU_DESCRIPTION, mcu.description)
@@ -57,6 +61,7 @@ class MCUDetailActivity : AppCompatActivity() {
                 putExtra(EXTRA_MCU_FIRMWARE_VERSION, mcu.firmwareVersion)
                 putExtra(EXTRA_MCU_LAST_SEEN_AS, mcu.lastSeenAs)
                 putExtra(EXTRA_MCU_MODEL, mcu.model)
+                putExtra(EXTRA_ROOM_INDEX, roomIndex)
             }
         }
     }
@@ -74,20 +79,33 @@ class MCUDetailActivity : AppCompatActivity() {
             insets
         }
 
-        // Get MCU details from intent
-        val mcuName = intent.getStringExtra(EXTRA_MCU_NAME) ?: return finish()
+        // Get room index from intent
+        val roomIndex = intent.getIntExtra(EXTRA_ROOM_INDEX, -1)
+        if (roomIndex == -1) {
+            finish()
+            return
+        }
+
+        // Get the current room
+        currentRoom = RoomManager.getRooms()[roomIndex]
+
+        // Get MCU ID from intent
+        val mcuId = intent.getStringExtra(EXTRA_MCU_ID)
         
-        // Try to get the existing MCU from MCUManager
-        val existingMCU = MCUManager.getMCUByName(mcuName)
+        // Try to get the existing MCU from the room using ID
+        val existingMCU = if (mcuId != null) {
+            currentRoom.getMCUs().find { it.id == mcuId }
+        } else null
         
         if (existingMCU != null) {
             // Use the existing MCU if found
             mcu = existingMCU.copy()
             originalMCU = existingMCU
         } else {
-            // Create new MCU with values from intent
+            // Create new MCU with values from intent and preserve the ID if it exists
             mcu = MCU(
-                name = mcuName,
+                id = mcuId ?: java.util.UUID.randomUUID().toString(),
+                name = intent.getStringExtra(EXTRA_MCU_NAME) ?: "New MCU",
                 status = intent.getStringExtra(EXTRA_MCU_STATUS) ?: "Offline",
                 description = intent.getStringExtra(EXTRA_MCU_DESCRIPTION) ?: "New Device",
                 mode = intent.getStringExtra(EXTRA_MCU_MODE) ?: "Manual",
@@ -98,8 +116,7 @@ class MCUDetailActivity : AppCompatActivity() {
                 lastSeenAs = intent.getStringExtra(EXTRA_MCU_LAST_SEEN_AS) ?: "Never",
                 model = intent.getStringExtra(EXTRA_MCU_MODEL) ?: "Default Model"
             )
-            // Add the new MCU to manager if it doesn't exist
-            MCUManager.addMCU(mcu)
+            currentRoom.addMCU(mcu)
             originalMCU = mcu.copy()
         }
 
@@ -108,7 +125,7 @@ class MCUDetailActivity : AppCompatActivity() {
 
         // Setup back button
         findViewById<View>(R.id.backButton).setOnClickListener {
-            finish() // Close this activity and return to previous screen
+            finish()
         }
 
         // Setup navigation bar
@@ -254,10 +271,8 @@ class MCUDetailActivity : AppCompatActivity() {
     }
 
     private fun saveMCUChanges() {
-        MCUManager.updateMCU(originalMCU, mcu)
+        currentRoom.updateMCU(originalMCU, mcu)
         originalMCU = mcu.copy() // Update the original MCU reference
-        // Notify listeners about the MCU update
-        onMCUUpdateListener?.invoke(mcu)
     }
 
     private fun setupNavigationBar() {

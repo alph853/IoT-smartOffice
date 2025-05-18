@@ -21,17 +21,18 @@ class RoomDetailActivity : AppCompatActivity() {
     private lateinit var navigationBar: NavigationBar
     private lateinit var mcuAdapter: MCUAdapter
     private lateinit var tvActiveCount: TextView
+    private lateinit var currentRoom: Room
 
     companion object {
         private const val EXTRA_ROOM_NAME = "extra_room_name"
         private const val EXTRA_ROOM_DESC = "extra_room_desc"
-        private const val EXTRA_ROOM_DEVICE_COUNT = "extra_room_device_count"
+        private const val EXTRA_ROOM_INDEX = "extra_room_index"
 
-        fun newIntent(context: Context, room: Room): Intent {
+        fun newIntent(context: Context, room: Room, roomIndex: Int): Intent {
             return Intent(context, RoomDetailActivity::class.java).apply {
                 putExtra(EXTRA_ROOM_NAME, room.name)
                 putExtra(EXTRA_ROOM_DESC, room.description)
-                putExtra(EXTRA_ROOM_DEVICE_COUNT, room.deviceCount)
+                putExtra(EXTRA_ROOM_INDEX, roomIndex)
             }
         }
     }
@@ -42,6 +43,16 @@ class RoomDetailActivity : AppCompatActivity() {
         supportActionBar?.hide()
         setContentView(R.layout.activity_room_detail)
 
+        // Get room index from intent
+        val roomIndex = intent.getIntExtra(EXTRA_ROOM_INDEX, -1)
+        if (roomIndex == -1) {
+            finish()
+            return
+        }
+
+        // Get the current room
+        currentRoom = RoomManager.getRooms()[roomIndex]
+
         // Apply window insets properly
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.detail_main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -50,18 +61,17 @@ class RoomDetailActivity : AppCompatActivity() {
             insets
         }
 
-        // Get room details from intent
-        val roomName = intent.getStringExtra(EXTRA_ROOM_NAME) ?: "Room"
-        val roomDesc = intent.getStringExtra(EXTRA_ROOM_DESC) ?: "Building"
-        val deviceCount = intent.getIntExtra(EXTRA_ROOM_DEVICE_COUNT, 0)
-
-        // Set room name in the header
-        findViewById<TextView>(R.id.tvDetailRoomName).text = roomName
+        // Setup views
         tvActiveCount = findViewById(R.id.tv_active_count)
+        findViewById<TextView>(R.id.tvDetailRoomName).text = currentRoom.name
 
+        setupUI()
+    }
+
+    private fun setupUI() {
         // Setup back button
         findViewById<View>(R.id.backButton).setOnClickListener {
-            finish() // Close this activity and return to previous screen
+            finish()
         }
         
         // Setup menu button event
@@ -94,7 +104,7 @@ class RoomDetailActivity : AppCompatActivity() {
         // Setup RecyclerView for MCU cards
         val rvMCUs = findViewById<RecyclerView>(R.id.rvMCUs)
         mcuAdapter = MCUAdapter(
-            MCUManager.getMCUs(),
+            currentRoom,
             { updateActiveCount() },
             { mcu -> onMCUCardClicked(mcu) }
         )
@@ -117,33 +127,31 @@ class RoomDetailActivity : AppCompatActivity() {
         // Setup navigation bar
         setupNavigationBar()
     }
-    
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh the adapter to show any updates
+        mcuAdapter.notifyDataSetChanged()
+        updateActiveCount()
+    }
+
     private fun updateActiveCount() {
-        val onlineCount = MCUManager.getMCUs().count { it.status.equals("Online", ignoreCase = true) }
-        tvActiveCount.text = "$onlineCount active(s)"
+        tvActiveCount.text = "${currentRoom.deviceCount} MCU(s)"
     }
     
     private fun onMCUCardClicked(mcu: MCU) {
-        // Set up the update listener before launching MCU detail screen
-        MCUDetailActivity.setOnMCUUpdateListener { updatedMCU ->
-            // Find the position of the updated MCU in the adapter
-            val position = MCUManager.getMCUs().indexOf(updatedMCU)
-            if (position != -1) {
-                // Update the RecyclerView item
-                mcuAdapter.notifyItemChanged(position)
-            }
-        }
-        
+        // Get the room index
+        val roomIndex = RoomManager.getRooms().indexOf(currentRoom)
         // Navigate to MCU detail screen
-        val intent = MCUDetailActivity.newIntent(this, mcu)
+        val intent = MCUDetailActivity.newIntent(this, mcu, roomIndex)
         startActivity(intent)
     }
     
     private fun onMenuAdd() {
         // Create a new MCU with default values
-        val newMCU = MCU() // This will use the new default values we defined
-        MCUManager.addMCU(newMCU)
-        mcuAdapter.notifyItemInserted(MCUManager.getMCUCount() - 1)
+        val newMCU = MCU()
+        currentRoom.addMCU(newMCU)
+        mcuAdapter.notifyItemInserted(currentRoom.deviceCount - 1)
         updateActiveCount()
     }
 

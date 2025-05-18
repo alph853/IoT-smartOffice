@@ -19,7 +19,7 @@ import androidx.core.content.ContextCompat
 
 
 class MCUAdapter(
-    private val mcus: MutableList<MCU>,
+    private val room: Room,
     private val onMCURemoved: () -> Unit,
     private val onMCUClicked: ((MCU) -> Unit)? = null
 ) : RecyclerView.Adapter<MCUAdapter.MCUViewHolder>() {
@@ -28,6 +28,8 @@ class MCUAdapter(
     
     private var _isRemoveMode = false
     private var _isModifyMode = false
+
+    fun getMCUs(): List<MCU> = room.getMCUs()
 
     fun setRemoveMode(enabled: Boolean) {
         _isRemoveMode = enabled
@@ -52,7 +54,7 @@ class MCUAdapter(
     }
 
     override fun onBindViewHolder(holder: MCUViewHolder, position: Int) {
-        val mcu = mcus[position]
+        val mcu = room.getMCUs()[position]
         holder.tvMCUName.text = mcu.name
         holder.tvMCUDesc.text = mcu.description
         holder.tvMode.text = mcu.mode
@@ -63,10 +65,8 @@ class MCUAdapter(
         
         // Set status background color based on online/offline status
         if (mcu.status.equals("Online", ignoreCase = true)) {
-            // Keep the default active badge color
             holder.tvStatus.setTextColor(ContextCompat.getColor(holder.itemView.context, R.color.green))
         } else {
-            // Set a different color for offline status (darker or red tint)
             holder.tvStatus.setTextColor(ContextCompat.getColor(holder.itemView.context, R.color.red))
         }
 
@@ -78,10 +78,10 @@ class MCUAdapter(
         // Set click listener for remove button
         holder.imgRemove.setOnClickListener {
             // Remove the MCU at this position
-            MCUManager.removeMCU(position)
+            room.removeMCU(mcu)
             notifyItemRemoved(position)
             // Notify adapter of the range of items that changed
-            notifyItemRangeChanged(position, MCUManager.getMCUCount())
+            notifyItemRangeChanged(position, room.deviceCount)
             // Notify RoomDetailActivity to update active count
             onMCURemoved()
         }
@@ -96,22 +96,18 @@ class MCUAdapter(
         // Set click listeners for text modification
         if (_isModifyMode) {
             holder.tvMCUName.setOnClickListener {
-                showEditDialog(holder.tvMCUName, position, "name")
+                showEditDialog(holder.tvMCUName, mcu, "name")
             }
             holder.tvMCUDesc.setOnClickListener {
-                showEditDialog(holder.tvMCUDesc, position, "description")
+                showEditDialog(holder.tvMCUDesc, mcu, "description")
             }
             holder.tvMode.setOnClickListener {
-                showModeDialog(position)
-            }
-            holder.tvStatus.setOnClickListener {
-                showStatusDialog(position)
+                showModeDialog(mcu)
             }
         } else {
             holder.tvMCUName.setOnClickListener(null)
             holder.tvMCUDesc.setOnClickListener(null)
             holder.tvMode.setOnClickListener(null)
-            holder.tvStatus.setOnClickListener(null)
         }
 
         // Set card size to be square: edge = (device width - 60dp) / 2
@@ -177,7 +173,7 @@ class MCUAdapter(
 
     }
 
-    private fun showEditDialog(textView: TextView, position: Int, field: String) {
+    private fun showEditDialog(textView: TextView, mcu: MCU, field: String) {
         val context = textView.context
         val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_edit, null)
         val editText = dialogView.findViewById<EditText>(R.id.editText)
@@ -197,10 +193,19 @@ class MCUAdapter(
         dialogView.findViewById<Button>(R.id.btnConfirm).setOnClickListener {
             val newText = editText.text.toString()
             if (newText.isNotEmpty()) {
+                // Create updated MCU with new value
+                val updatedMCU = mcu.copy(
+                    name = if (field == "name") newText else mcu.name,
+                    description = if (field == "description") newText else mcu.description
+                )
+                // Update the MCU in the room
+                room.updateMCU(mcu, updatedMCU)
+                // Update the view
                 textView.text = newText
-                when(field) {
-                    "name" -> mcus[position].name = newText
-                    "description" -> mcus[position].description = newText
+                // Find position by MCU ID and notify the specific item change
+                val position = room.getMCUs().indexOfFirst { it.id == mcu.id }
+                if (position != -1) {
+                    notifyItemChanged(position)
                 }
             }
             dialog.dismiss()
@@ -213,7 +218,7 @@ class MCUAdapter(
         dialog.show()
     }
     
-    private fun showModeDialog(position: Int) {
+    private fun showModeDialog(mcu: MCU) {
         // Use the stored context or return if null
         val context = viewContext ?: return
         
@@ -223,8 +228,15 @@ class MCUAdapter(
             .setTitle("Select Mode")
             .setItems(modes) { dialog, which ->
                 val selectedMode = modes[which]
-                mcus[position].mode = selectedMode
-                notifyItemChanged(position)
+                // Create updated MCU with new mode
+                val updatedMCU = mcu.copy(mode = selectedMode)
+                // Update the MCU in the room
+                room.updateMCU(mcu, updatedMCU)
+                // Find position by MCU ID and notify the specific item change
+                val position = room.getMCUs().indexOfFirst { it.id == mcu.id }
+                if (position != -1) {
+                    notifyItemChanged(position)
+                }
                 dialog.dismiss()
             }
             .create()
@@ -242,7 +254,7 @@ class MCUAdapter(
             .setTitle("Select Status")
             .setItems(statuses) { dialog, which ->
                 val selectedStatus = statuses[which]
-                mcus[position].status = selectedStatus
+                room.getMCUs()[position].status = selectedStatus
                 notifyItemChanged(position)
                 dialog.dismiss()
             }
@@ -251,7 +263,7 @@ class MCUAdapter(
         dialog.show()
     }
 
-    override fun getItemCount(): Int = mcus.size
+    override fun getItemCount(): Int = room.deviceCount
 
     class MCUViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val tvMCUName: TextView = itemView.findViewById(R.id.tvMCUName)

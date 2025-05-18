@@ -117,9 +117,17 @@ class MainActivity : AppCompatActivity() {
         updateActiveCount()
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Refresh the room list
+        roomAdapter.notifyDataSetChanged()
+        updateActiveCount()
+    }
+
     private fun onRoomCardClicked(room: Room) {
-        // Launch the RoomDetailActivity with room information
-        val intent = RoomDetailActivity.newIntent(this, room)
+        // Launch the RoomDetailActivity with room information and index
+        val roomIndex = RoomManager.getRooms().indexOf(room)
+        val intent = RoomDetailActivity.newIntent(this, room, roomIndex)
         startActivity(intent)
     }
 
@@ -179,6 +187,8 @@ class MainActivity : AppCompatActivity() {
             // Ensure we're showing the home screen and the home tab is selected
             navigationBar.setSelectedIndex(0)
             showContent(0)
+            // Update the room list
+            roomAdapter.notifyDataSetChanged()
         }
     }
 }

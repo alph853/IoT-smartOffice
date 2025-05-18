@@ -137,14 +137,11 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Name"
+                        android:layout_weight="1"
                         android:textColor="@color/white"
                         android:textSize="14sp"
                         android:textStyle="bold"/>
 
-                    <Space
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1" />
 
                     <TextView
                         android:id="@+id/tvName"
@@ -154,12 +151,6 @@
                         android:textColor="@color/grey"
                         android:textSize="14sp"
                         android:textStyle="bold" />
-
-                    <ImageView
-                        android:layout_marginStart="10dp"
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
-                        android:src="@drawable/ic_front" />
                 </LinearLayout>
 
                 <View
@@ -184,14 +175,11 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Description"
+                        android:layout_weight="1"
                         android:textColor="@color/white"
                         android:textSize="14sp"
                         android:textStyle="bold"/>
 
-                    <Space
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1" />
 
                     <TextView
                         android:id="@+id/tvDescription"
@@ -202,11 +190,7 @@
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
-                    <ImageView
-                        android:layout_marginStart="10dp"
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
-                        android:src="@drawable/ic_front" />
+
                 </LinearLayout>
 
                 <View
@@ -232,13 +216,10 @@
                         android:layout_height="wrap_content"
                         android:text="Mode"
                         android:textColor="@color/white"
+                        android:layout_weight="1"
                         android:textSize="14sp"
                         android:textStyle="bold"/>
 
-                    <Space
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1" />
 
                     <TextView
                         android:id="@+id/tvMode"
@@ -249,11 +230,7 @@
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
-                    <ImageView
-                        android:layout_marginStart="10dp"
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
-                        android:src="@drawable/ic_front" />
+
                 </LinearLayout>
 
                 <View
@@ -278,14 +255,11 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Location"
+                        android:layout_weight="1"
                         android:textColor="@color/white"
                         android:textSize="14sp"
                         android:textStyle="bold"/>
 
-                    <Space
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1" />
 
                     <TextView
                         android:id="@+id/tvLocation"
@@ -296,11 +270,7 @@
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
-                    <ImageView
-                        android:layout_marginStart="10dp"
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
-                        android:src="@drawable/ic_front" />
+
                 </LinearLayout>
 
             </LinearLayout>
@@ -331,13 +301,10 @@
                         android:layout_height="wrap_content"
                         android:text="Register at"
                         android:textColor="@color/white"
+                        android:layout_weight="1"
                         android:textSize="14sp"
                         android:textStyle="bold"/>
 
-                    <Space
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1" />
 
                     <TextView
                         android:id="@+id/tvRegisterAt"
@@ -348,11 +315,7 @@
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
-                    <ImageView
-                        android:layout_marginStart="10dp"
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
-                        android:src="@drawable/ic_front" />
+
                 </LinearLayout>
 
                 <View
@@ -377,14 +340,10 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Mac address"
+                        android:layout_weight="1"
                         android:textColor="@color/white"
                         android:textSize="14sp"
                         android:textStyle="bold"/>
-
-                    <Space
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1" />
 
                     <TextView
                         android:id="@+id/tvMacAddress"
@@ -395,11 +354,7 @@
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
-                    <ImageView
-                        android:layout_marginStart="10dp"
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
-                        android:src="@drawable/ic_front" />
+
                 </LinearLayout>
 
                 <View
@@ -424,14 +379,10 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Firmware version"
+                        android:layout_weight="1"
                         android:textColor="@color/white"
                         android:textSize="14sp"
                         android:textStyle="bold"/>
-
-                    <Space
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1" />
 
                     <TextView
                         android:id="@+id/tvFirmwareVersion"
@@ -442,11 +393,7 @@
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
-                    <ImageView
-                        android:layout_marginStart="10dp"
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
-                        android:src="@drawable/ic_front" />
+
                 </LinearLayout>
 
                 <View
@@ -472,13 +419,9 @@
                         android:layout_height="wrap_content"
                         android:text="Last seen as"
                         android:textColor="@color/white"
+                        android:layout_weight="1"
                         android:textSize="14sp"
                         android:textStyle="bold"/>
-
-                    <Space
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1" />
 
                     <TextView
                         android:id="@+id/tvLastSeenAs"
@@ -489,11 +432,7 @@
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
-                    <ImageView
-                        android:layout_marginStart="10dp"
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
-                        android:src="@drawable/ic_front" />
+
                 </LinearLayout>
 
                 <View
@@ -519,13 +458,9 @@
                         android:layout_height="wrap_content"
                         android:text="Model"
                         android:textColor="@color/white"
+                        android:layout_weight="1"
                         android:textSize="14sp"
                         android:textStyle="bold"/>
-
-                    <Space
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1" />
 
                     <TextView
                         android:id="@+id/tvModel"
@@ -536,11 +471,7 @@
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
-                    <ImageView
-                        android:layout_marginStart="10dp"
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
-                        android:src="@drawable/ic_front" />
+
                 </LinearLayout>
 
             </LinearLayout>
