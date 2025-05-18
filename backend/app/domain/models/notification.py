@@ -1,14 +1,22 @@
-from pydantic import BaseModel, Field
-from typing import Dict, Any
+from pydantic import BaseModel
 from datetime import datetime
+from enum import Enum
+
+
+class NotificationType(Enum):
+    INFO = "info"
+    WARNING = "warning"
+    CRITICAL = "critical"
+    ERROR = "error"
 
 
 class Notification(BaseModel):
-    id: str
-    type: str
+    id: str | None = None
     message: str
-    severity: str
-    timestamp: datetime
-    read: bool = False
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    read_status: bool = False
+    type: NotificationType
+    title: str
+    device_id: int | None = None
+    ts: datetime | None = None
+
 

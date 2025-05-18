@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from ..models import ControlCommand
+from app.domain.models import ControlCommand
 
 
 class ControlRepository(ABC):

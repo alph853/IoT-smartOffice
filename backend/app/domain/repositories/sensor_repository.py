@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 from datetime import datetime
-from ..models import SensorReading
+from app.domain.models import SensorReading
 
 
 class SensorRepository(ABC):

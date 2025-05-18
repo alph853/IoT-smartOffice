@@ -1,7 +1,8 @@
 import asyncio
 import asyncpg
 from contextlib import asynccontextmanager
-import logging
+from loguru import logger
+
 
 class PostgreSQLConnection:
     """
@@ -32,7 +33,7 @@ class PostgreSQLConnection:
                         password=self.password,
                         database=self.database
                     )
-                    print("PostgreSQL connection pool initialized")
+                    logger.info("PostgreSQL connection pool initialized")
 
     @asynccontextmanager
     async def acquire(self):
@@ -49,7 +50,7 @@ class PostgreSQLConnection:
         if self.pool is not None:
             await self.pool.close()
             self.pool = None
-            print("PostgreSQL connection pool closed")
+            logger.info("PostgreSQL connection pool closed")
 
 
 if __name__ == "__main__":

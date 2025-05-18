@@ -4,19 +4,36 @@ from pydantic import BaseModel, Field
 from enum import Enum
 
 
+class DeviceStatus(Enum):
+    ONLINE = "online"
+    OFFLINE = "offline"
+    ERROR = "error"
+    MAINTENANCE = "maintenance"
+    DISABLED = "disabled"
+
+
+class DeviceMode(Enum):
+    AUTO = "auto"
+    MANUAL = "manual"
+    SCHEDULED = "scheduled"
+
+
 class Sensor(BaseModel):
     id: int | None = None
     name: str
-    type: str
-    unit: str
+    type: str | None = None
+    unit: str | None = None
     device_id: int | None = None
+    status: DeviceStatus = DeviceStatus.ONLINE
 
 
 class Actuator(BaseModel):
     id: int | None = None
     name: str
-    type: str
+    type: str | None = None
     device_id: int | None = None
+    mode: DeviceMode = DeviceMode.MANUAL
+    status: DeviceStatus = DeviceStatus.ONLINE
 
 
 class SensorReadingCreate(BaseModel):
@@ -41,35 +58,31 @@ class DeviceRegistration(BaseModel):
     actuators: List[Actuator]
 
 
-class DeviceStatus(Enum):
-    ONLINE = "online"
-    OFFLINE = "offline"
-    ERROR = "error"
-    MAINTENANCE = "maintenance"
-    DISABLED = "disabled"
-
-
-class DeviceMode(Enum):
-    AUTO = "auto"
-    MANUAL = "manual"
-    SCHEDULED = "scheduled"
-
-
 class Device(BaseModel):
     id: int | None = None
     name: str
-    mode: DeviceMode
-    registered_at: datetime | None = None
+    registered_at: datetime = datetime.now()
     mac_addr: str
     description: str | None = None
     fw_version: str
-    last_seen_at: datetime | None = None
-    model: str
+    last_seen_at: datetime = datetime.now()
+    model: str | None = None
     office_id: int
     gateway_id: int
-    status: DeviceStatus
+    status: DeviceStatus = DeviceStatus.ONLINE
     access_token: str | None = None
 
+
+class DeviceUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    fw_version: str | None = None
+    model: str | None = None
+    office_id: int | None = None
+    gateway_id: int | None = None
+    status: DeviceStatus | None = None
+    access_token: str | None = None
+    last_seen_at: datetime | None = None
 
 
 class Gateway(BaseModel):

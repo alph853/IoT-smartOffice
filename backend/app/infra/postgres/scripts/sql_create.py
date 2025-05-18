@@ -26,7 +26,7 @@ CREATE TABLE monitor (
 CREATE TABLE device (
   id            SERIAL PRIMARY KEY,
   mode          TEXT              NOT NULL,
-  name          TEXT              NOT NULL,
+  name          TEXT              UNIQUE NOT NULL,
   registered_at TIMESTAMPTZ       NOT NULL DEFAULT now(),
   mac_addr      TEXT              NOT NULL UNIQUE,
   description   TEXT,
@@ -39,11 +39,15 @@ CREATE TABLE device (
   access_token  TEXT              UNIQUE
 );
 
+ALTER TABLE device
+ADD CONSTRAINT device_name_unique UNIQUE (name);
+
 -- 5. SENSOR  (extends capability)
 CREATE TABLE sensor (
   id         SERIAL PRIMARY KEY,
   device_id  INTEGER NOT NULL
-               REFERENCES device(id) ON DELETE CASCADE,
+               REFERENCES device(id) ON DELETE CASCADE
+               DEFERRABLE INITIALLY DEFERRED,
   unit       TEXT     NOT NULL,
   name       TEXT     NOT NULL,
   type       TEXT     NOT NULL
@@ -53,7 +57,8 @@ CREATE TABLE sensor (
 CREATE TABLE actuator (
   id         SERIAL PRIMARY KEY,
   device_id  INTEGER NOT NULL
-               REFERENCES device(id) ON DELETE CASCADE,
+               REFERENCES device(id) ON DELETE CASCADE
+               DEFERRABLE INITIALLY DEFERRED,
   name        TEXT     NOT NULL,
   type        TEXT     NOT NULL
 );
@@ -116,7 +121,8 @@ CREATE TABLE notification (
   read_status   BOOLEAN           NOT NULL DEFAULT FALSE,
   type          TEXT              NOT NULL,
   title         TEXT,
-  device_id     INTEGER           REFERENCES device(id) ON DELETE CASCADE
+  device_id     INTEGER           REFERENCES device(id) ON DELETE CASCADE,
+  ts            TIMESTAMPTZ       NOT NULL DEFAULT now()
 );
 
 

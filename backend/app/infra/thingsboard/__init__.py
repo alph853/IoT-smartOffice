@@ -1,6 +1,6 @@
-from .thingsboard_client import ThingsBoardClient
+from .thingsboard_client import ThingsboardClient
 
-__all__ = ["ThingsBoardClient"]
+__all__ = ["ThingsboardClient"]
 
 
 

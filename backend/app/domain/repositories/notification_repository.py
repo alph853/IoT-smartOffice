@@ -5,11 +5,7 @@ from ..models import Notification
 
 class NotificationRepository(ABC):
     @abstractmethod
-    async def save_notification(self, notification: Notification) -> None:
-        pass
-
-    @abstractmethod
-    async def get_notification(self, notification_id: str) -> Optional[Notification]:
+    async def get_all_notifications(self) -> List[Notification]:
         pass
 
     @abstractmethod
@@ -17,5 +13,26 @@ class NotificationRepository(ABC):
         pass
 
     @abstractmethod
-    async def mark_as_read(self, notification_id: str) -> None:
+    async def get_notification_by_id(self, notification_id: str) -> Notification | None:
         pass
+
+    @abstractmethod
+    async def create_notification(self, notification: Notification) -> Notification:
+        pass
+
+    @abstractmethod
+    async def mark_as_read(self, notification_id: str) -> bool:
+        pass
+
+    @abstractmethod
+    async def mark_all_as_read(self) -> bool:
+        pass
+
+    @abstractmethod
+    async def delete_all_notifications(self) -> bool:
+        pass
+
+    @abstractmethod
+    async def delete_notification(self, notification_id: str) -> bool:
+        pass
+

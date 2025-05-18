@@ -13,6 +13,10 @@ class DeviceRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_device_by_mac_addr(self, mac_addr: str) -> Optional[Device]:
+        pass
+
+    @abstractmethod
     async def create_device(self, device: Device) -> Device:
         pass
 
@@ -21,7 +25,7 @@ class DeviceRepository(ABC):
         pass
 
     @abstractmethod
-    async def delete_device(self, device_id: str) -> Device:
+    async def delete_device(self, device_id: str) -> bool:
         pass
 
     @abstractmethod

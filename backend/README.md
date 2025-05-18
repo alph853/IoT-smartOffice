@@ -18,3 +18,18 @@ fastapi dev backend/app/main.py
 cd backend
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
+
+### Websocket
+
+```json
+{
+    "actuator_id": 1,
+    "lighting": {
+        "brightness": 100,
+        "color": "red"
+    }
+}
+```
+
+
+

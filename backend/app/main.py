@@ -1,8 +1,9 @@
-import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-import logging
+from loguru import logger
+import sys
+import uvicorn
 
 from app.api.routers import *
 from app.services import *
@@ -14,6 +15,13 @@ from app.infra.thingsboard import *
 from app.config import Config
 
 
+logger.remove()
+logger.add(
+    sink=sys.stdout,
+    format="<level>{level}</level> | <cyan>{file}</cyan>:<cyan>{line}</cyan> - <level>\t{message}</level>"
+)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
@@ -22,7 +30,7 @@ async def lifespan(app: FastAPI):
     # ---------------------------------------------------------------
 
     config = Config("config.json")
-    print(f"Server started at {Config.get_wireless_lan_ip()}")
+    logger.info(f"Server started at {Config.get_wireless_lan_ip()}")
 
     db = PostgreSQLConnection(
         host=config.postgres.host,
@@ -32,9 +40,20 @@ async def lifespan(app: FastAPI):
         database=config.postgres.database
     )
     await db.initialize()
+
     http_client          = AiohttpClient()
     event_bus            = InProcEventBus()
-    thingsboard_client   = ThingsBoardClient(event_bus)
+    thingsboard_client   = ThingsboardClient(event_bus,
+        http_client = http_client,
+        broker_url  = config.thingsboard.url,
+        broker_port = config.thingsboard.port,
+        client_id   = config.thingsboard.client_id,
+        username    = config.thingsboard.username,
+        password    = config.thingsboard.password,
+        api         = config.thingsboard.api,
+        device_id   = config.thingsboard.device_id,
+        device_name = config.thingsboard.device_name
+    )
 
     await http_client.connect()
     await thingsboard_client.connect()
@@ -47,30 +66,39 @@ async def lifespan(app: FastAPI):
     # ------------------- Initialize Repositories -------------------
     # ---------------------------------------------------------------
 
-    device_repository = PostgresDeviceRepository(db)
+    device_repository       = PostgresDeviceRepository(db)
+    notification_repository = PostgresNotificationRepository(db)
+    office_repository       = PostgresOfficeRepository(db)
 
 
     # ---------------------------------------------------------------
     # --------------------- Initialize services ---------------------
     # ---------------------------------------------------------------
 
-    device_service = DeviceService(device_repository)
+    device_service          = DeviceService(event_bus, device_repository, thingsboard_client)
+    broadcast_service       = BroadcastService(event_bus, thingsboard_client)
+    notification_service    = NotificationService(event_bus, notification_repository, office_repository)
 
-    app.state.device_service = device_service
+    app.state.device_service       = device_service
+    app.state.broadcast_service    = broadcast_service
+    app.state.notification_service = notification_service
 
     # ---------------------------------------------------------------
     # ------------------- Start background tasks --------------------
     # ---------------------------------------------------------------
 
-    device_service.start()
-
+    await device_service.start()
+    await notification_service.start()
+    await broadcast_service.start()
 
     yield
 
 
     # ----------------- Shutdown -----------------
-    print("Cleaning up services...")
-    device_service.stop()
+    await device_service.stop()
+    await notification_service.stop()
+    await broadcast_service.stop()
+
     await thingsboard_client.disconnect()
     await http_client.disconnect()
 
@@ -94,4 +122,8 @@ def root():
 
 
 app.include_router(device_router)
+app.include_router(ws_router)
 
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

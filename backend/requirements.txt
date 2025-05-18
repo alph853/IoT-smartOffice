@@ -3,3 +3,12 @@ aiohttp
 websockets
 aiofiles
 asyncpg
+
+psutil
+aiomqtt
+dependency-injector
+apscheduler
+loguru
+tb-mqtt-client
+pymmh3
+redis

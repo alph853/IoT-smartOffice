@@ -11,3 +11,10 @@ class HttpClientRepository(ABC):
     async def disconnect(self):
         pass
 
+    @abstractmethod
+    async def request(self,
+                      url: str,
+                      payload: dict | None = None,
+                      method: str = "GET",
+                      headers: dict | None = None):
+        pass

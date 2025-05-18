@@ -6,29 +6,38 @@ SELECT * FROM device
 GET_DEVICE_BY_ID = """
 SELECT * FROM device WHERE id = $1
 """
+GET_DEVICE_BY_MAC_ADDR = """
+SELECT * FROM device WHERE mac_addr = $1
+"""
 
 CREATE_DEVICE = """
-INSERT INTO device (name, mode, registered_at, mac_addr, description, fw_version, last_seen_at, model, office_id, gateway_id, status, access_token)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-RETURNING id, name, mode, registered_at, mac_addr, description, fw_version, last_seen_at, model, office_id, gateway_id, status, access_token
+INSERT INTO device (name, registered_at, mac_addr, description, fw_version, last_seen_at, model, office_id, gateway_id, status, access_token)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+RETURNING id, name, registered_at, mac_addr, description, fw_version, last_seen_at, model, office_id, gateway_id, status, access_token
 """
 
 UPDATE_DEVICE = """
+UPDATE device
+SET {set_clauses}
+WHERE id = $1
+RETURNING id, name, registered_at, mac_addr, description, fw_version, last_seen_at, model, office_id, gateway_id, status, access_token
 """
 
 DELETE_DEVICE = """
+DELETE FROM device WHERE id = $1
+RETURNING id
 """
 
 CREATE_SENSOR = """
-INSERT INTO sensor (name, type, unit, device_id)
-VALUES ($1, $2, $3, $4)
-RETURNING id, name, type, unit, device_id
+INSERT INTO sensor (name, type, unit, device_id, status)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, name, type, unit, device_id, status
 """
 
 CREATE_ACTUATOR = """
-INSERT INTO actuator (name, type, device_id)
-VALUES ($1, $2, $3)
-RETURNING id, name, type, device_id
+INSERT INTO actuator (name, type, device_id, mode, status)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, name, type, device_id, mode, status
 """
 
 GET_ALL_SENSORS = """
