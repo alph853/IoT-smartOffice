@@ -61,11 +61,20 @@ class RedisCacheClient(CacheClientRepository):
 
         return device
 
-    async def remove_device(self, device_id: str) -> bool:
-        return await self.client.delete(f"device:id:{device_id}")
+    async def delete_device(self, device_id: str) -> bool:
+        if await self.client.delete(f"device:id:{device_id}"):
+            return True
+        return False
 
-    async def update_device(self, device: Device) -> bool:
-        pass
+    async def update_device(self, device_id: str, info: dict) -> bool:
+        device_key  = f"device:id:{device_id}"
+        device_data = await self.client.get(device_key)
+        if device_data:
+            device = json.loads(device_data)
+            device.update(info)
+            await self.client.set(device_key, json.dumps(device))
+            return True
+        return False
 
     # -------------------------------------------------------------
     # ------------------------- Control -------------------------

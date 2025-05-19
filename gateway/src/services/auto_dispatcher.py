@@ -8,4 +8,4 @@ class AutoDispatcherService:
         self.event_bus = event_bus
 
     def dispatch(self, message: str):
-        self.mqtt_client.publish(message)
+        pass

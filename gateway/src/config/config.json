@@ -83,7 +83,7 @@
                 "dst": "gateway"
             },
             "telemetry": {
-                "topic": "gateway/telemetry/#",
+                "topic": "gateway/telemetry/",
                 "qos": 1,
                 "retain": 0,
                 "description": "Device publishes periodic telemetry data",
@@ -107,7 +107,7 @@
                 "dst": "device"
             },
             "control_response": {
-                "topic": "gateway/control/response/#",
+                "topic": "gateway/control/response/",
                 "qos": 1,
                 "retain": 0,
                 "description": "Device replies to cloud commands",
@@ -117,7 +117,7 @@
         }
     },
     "backend": {
-        "url": "http://192.168.1.194:8000",
+        "url": "http://192.168.1.195:8000",
         "api": {
             "get_all_devices": {
                 "url": "/devices",

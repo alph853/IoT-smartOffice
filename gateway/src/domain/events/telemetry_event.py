@@ -1,7 +1,8 @@
 from pydantic import BaseModel
+from datetime import datetime
 
 
 class TelemetryEvent(BaseModel):
-    id: str
-    timestamp: int
+    device_id: str
+    timestamp: int = datetime.now().timestamp()
     data: dict

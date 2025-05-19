@@ -29,7 +29,14 @@ class Container(containers.DeclarativeContainer):
         db=config.redis.db.as_int(),
         http_client=http_client,
     )
-
+    mosquitto_client = providers.Singleton(
+        MosquittoClient,
+        broker_url   = config.mosquitto.url,
+        broker_port  = config.mosquitto.port.as_int(),
+        event_bus    = event_bus,
+        cache_client = cache_client,
+        topics       = config.mosquitto.topics,
+    )
     thingsboard_client = providers.Singleton(
         ThingsboardClient,
         broker_url   = config.thingsboard.url,
@@ -40,15 +47,9 @@ class Container(containers.DeclarativeContainer):
         device_name  = config.thingsboard.device_name,
         event_bus    = event_bus,
         cache_client = cache_client,
+        gw_client    = mosquitto_client,
         topics       = config.thingsboard.topics,
         loop         = loop,
-    )
-    mosquitto_client = providers.Singleton(
-        MosquittoClient,
-        broker_url  = config.mosquitto.url,
-        broker_port = config.mosquitto.port.as_int(),
-        event_bus   = event_bus,
-        topics      = config.mosquitto.topics,
     )
 
     scheduler = providers.Singleton(
@@ -68,8 +69,9 @@ class Container(containers.DeclarativeContainer):
     )
     telemetry_service = providers.Singleton(
         TelemetryService,
-        cloud_client=thingsboard_client,
         event_bus=event_bus,
+        cache_client=cache_client,
+        cloud_client=thingsboard_client,
     )
     # auto_dispatcher = providers.Singleton(
     #     AutoDispatcherService,

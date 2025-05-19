@@ -40,11 +40,9 @@ class RegistrationService:
                 self.gw_client.register_device(device),
                 return_exceptions=True
             )
-            for task in tasks:
+            for index, task in enumerate(tasks):
                 if isinstance(task, Exception):
-                    logger.error(f"Error in registration service: {task}")
-                else:
-                    logger.info(f"Success in registration service: {task}")
+                    logger.error(f"Error in registration service {index}: {task}")
         except Exception as e:
             logger.error(f"Error in registration service: {e}")
             return

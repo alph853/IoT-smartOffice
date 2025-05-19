@@ -20,9 +20,13 @@ class MqttGatewayClientRepository(ABC):
     # -------------------------------------------------------------
 
     @abstractmethod
-    async def publish(self, topic: str, payload: str, qos: int = 0, retain: bool = False):
+    async def register_device(self, device: Device):
         pass
 
     @abstractmethod
-    async def register_device(self, device: Device):
+    async def connect_device(self, device: Device):
+        pass
+
+    @abstractmethod
+    async def disconnect_device(self, device: Device):
         pass

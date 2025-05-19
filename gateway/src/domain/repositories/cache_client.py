@@ -22,11 +22,11 @@ class CacheClientRepository(ABC):
         pass
     
     @abstractmethod
-    async def remove_device(self, device_id: str) -> bool:
+    async def delete_device(self, device_id: str) -> bool:
         pass
     
     @abstractmethod
-    async def update_device(self, device: Device) -> bool:
+    async def update_device(self, device_id: str, info: dict) -> bool:
         pass
 
     # ----------------------------------------------------------

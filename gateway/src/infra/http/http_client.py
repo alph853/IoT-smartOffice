@@ -34,9 +34,7 @@ class HttpClient(HttpClientRepository):
             url=url,
             method=api['method'],
             )
-        logger.info(f"Received devices: {response}")
         return [Device(**device) for device in response]
-
 
     async def connect_device(self, device: Device) -> Device:
         api = self.api['connect_device']

@@ -10,11 +10,12 @@ BROKER_PORT = 1883
 
 # Topics
 REQUEST_TOPIC = "gateway/register/request"
-RESPONSE_TOPIC_TEMPLATE = "gateway/register/response/{device_id}"
+TELEMETRY_TOPIC = "gateway/telemetry/{device_id}"
 
 # Device registration payload
 device_mac = f"AA:BB:CC:{uuid.uuid4().hex[:6].upper()}"
-
+# device_mac = f"AA:BB:CC"
+device_id = None
 
 # Sample device registration payload
 registration_payload = {
@@ -70,10 +71,15 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, msg):
     print(f"Received message on topic: {msg.topic}")
     try:
-        payload = json.loads(msg.payload.decode())
-        print(f"Response payload: {json.dumps(payload, indent=2)}")
-    except json.JSONDecodeError:
-        print(f"Raw payload: {msg.payload.decode()}")
+        payload = msg.payload.decode()
+        if payload.startswith("OK,id="):
+            global device_id
+            device_id = payload.split("=")[1]
+            print(f"Device ID: {device_id}")
+        else:
+            print(f"Error: {payload}")
+    except Exception as e:
+        print(f"Error: {e}")
 
 # Set up MQTT client
 client = mqtt.Client()
@@ -83,10 +89,26 @@ client.on_message = on_message
 # Connect to broker
 print(f"Connecting to MQTT broker at {BROKER_URL}:{BROKER_PORT}...")
 client.connect(BROKER_URL, BROKER_PORT, 60)
+client.loop_start()
 
+
+temp = 20
+humidity = 50
 # Start the loop
 try:
-    client.loop_forever()
+    while True:
+        if not device_id:
+            time.sleep(5)
+        else:
+            client.publish(
+                TELEMETRY_TOPIC.format(device_id=device_id),
+                json.dumps({"temperature": temp, "humidity": humidity}),
+                qos=1,
+                retain=True
+            )
+            time.sleep(2)
+            temp += 1
+            humidity += 1
 except KeyboardInterrupt:
     print("Script interrupted by user")
     client.disconnect() 
