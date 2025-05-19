@@ -2,7 +2,7 @@ from typing import List
 import re
 import asyncio
 
-from app.domain.models import Device, Sensor, Actuator, SensorReading, DeviceMode, DeviceStatus, DeviceUpdate, DeviceRegistration
+from app.domain.models import Device, Sensor, Actuator, SensorReading, DeviceUpdate, DeviceRegistration, SensorUpdate, ActuatorUpdate
 from app.domain.repositories import DeviceRepository
 from app.infra.postgres.db import PostgreSQLConnection
 from app.infra.postgres.scripts.sql_device import *
@@ -64,20 +64,19 @@ class PostgresDeviceRepository(DeviceRepository):
         query = CREATE_SENSOR
         if conn is None:
             async with self.db.acquire() as conn:
-                result = await conn.fetch(query, sensor.name, sensor.type, sensor.unit, sensor.device_id, sensor.status.value)
+                result = await conn.fetch(query, sensor.name, sensor.type, sensor.unit, sensor.device_id)
         else:
-            result = await conn.fetch(query, sensor.name, sensor.type, sensor.unit, sensor.device_id, sensor.status.value)
+            result = await conn.fetch(query, sensor.name, sensor.type, sensor.unit, sensor.device_id)
         return Sensor(**result[0])
 
     async def create_actuator(self, actuator: Actuator, conn=None) -> Actuator:
         query = CREATE_ACTUATOR
         if conn is None:
             async with self.db.acquire() as conn:
-                result = await conn.fetch(query, actuator.name, actuator.type, actuator.device_id, actuator.mode.value, actuator.status.value)
+                result = await conn.fetch(query, actuator.name, actuator.type, actuator.device_id, actuator.mode.value)
         else:
-            result = await conn.fetch(query, actuator.name, actuator.type, actuator.device_id, actuator.mode.value, actuator.status.value)
+            result = await conn.fetch(query, actuator.name, actuator.type, actuator.device_id, actuator.mode.value)
         return Actuator(**result[0])
-
 
     async def update_device(self, device_id: int, device_update: DeviceUpdate) -> Device | None:
         async with self.db.acquire() as conn:
@@ -93,15 +92,21 @@ class PostgresDeviceRepository(DeviceRepository):
                 set_clauses.append(f"{field} = ${idx + 2}")
                 values.append(value)
 
-            query = UPDATE_DEVICE.format(set_clauses=set_clauses)
+            query = UPDATE_DEVICE.format(set_clauses=', '.join(set_clauses))
             result = await conn.fetch(query, device_id, *values)
             return Device(**result[0]) if result else None
+
+    async def delete_all_devices(self) -> bool:
+        async with self.db.acquire() as conn:
+            query = DELETE_ALL_DEVICES
+            result = await conn.execute(query)
+            return bool(result[-1])
 
     async def delete_device(self, device_id: str) -> bool:
         async with self.db.acquire() as conn:
             query = DELETE_DEVICE
-            result = await conn.fetch(query, device_id)
-            return len(result) > 0
+            result = await conn.execute(query, device_id)
+            return bool(result[-1])
 
     async def get_all_sensors(self) -> List[Sensor]:
         async with self.db.acquire() as conn:
@@ -112,6 +117,21 @@ class PostgresDeviceRepository(DeviceRepository):
     async def get_sensor(self, id: int) -> Sensor:
         pass
 
+    async def update_sensor(self, id: int, sensor_update: SensorUpdate) -> Sensor | None:
+        async with self.db.acquire() as conn:
+            update_fields = sensor_update.model_dump(exclude_unset=True)
+            if not update_fields:
+                return None
+            set_clauses = []
+            values = []
+            for idx, (field, value) in enumerate(update_fields.items()):
+                set_clauses.append(f"{field} = ${idx + 2}")
+                values.append(value)
+
+            query = UPDATE_SENSOR.format(set_clauses=', '.join(set_clauses))
+            result = await conn.fetch(query, id, *values)
+            return Sensor(**result[0]) if result else None
+
     async def get_all_actuators(self) -> List[Actuator]:
         async with self.db.acquire() as conn:
             query = GET_ALL_ACTUATORS
@@ -120,6 +140,21 @@ class PostgresDeviceRepository(DeviceRepository):
 
     async def get_actuator(self, id: int) -> Actuator:
         pass
+
+    async def update_actuator(self, id: int, actuator_update: ActuatorUpdate) -> Actuator | None:
+        async with self.db.acquire() as conn:
+            update_fields = actuator_update.model_dump(exclude_unset=True)
+            if not update_fields:
+                return None
+            set_clauses = []
+            values = []
+            for idx, (field, value) in enumerate(update_fields.items()):
+                set_clauses.append(f"{field} = ${idx + 2}")
+                values.append(value)
+
+            query = UPDATE_ACTUATOR.format(set_clauses=', '.join(set_clauses))
+            result = await conn.fetch(query, id, *values)
+            return Actuator(**result[0]) if result else None
 
     async def create_sensor_reading(self, sensor_reading: SensorReading) -> SensorReading:
         pass

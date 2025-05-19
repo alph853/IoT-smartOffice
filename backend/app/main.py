@@ -76,7 +76,7 @@ async def lifespan(app: FastAPI):
     # ---------------------------------------------------------------
 
     device_service          = DeviceService(event_bus, device_repository, thingsboard_client)
-    broadcast_service       = BroadcastService(event_bus, thingsboard_client)
+    broadcast_service       = BroadcastService(event_bus, thingsboard_client, device_repository)
     notification_service    = NotificationService(event_bus, notification_repository, office_repository)
 
     app.state.device_service       = device_service

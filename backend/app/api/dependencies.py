@@ -3,10 +3,6 @@ import aiohttp
 from app.services import *
 
 
-def get_control_service(request: Request) -> ControlService:
-    return request.app.state.control_service
-
-
 def get_notification_service(request: Request) -> NotificationService:
     return request.app.state.notification_service
 

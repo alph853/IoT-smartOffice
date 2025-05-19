@@ -11,11 +11,17 @@ class DeviceStatus(Enum):
     MAINTENANCE = "maintenance"
     DISABLED = "disabled"
 
+    class Config:
+        use_enum_values = True
+
 
 class DeviceMode(Enum):
     AUTO = "auto"
     MANUAL = "manual"
     SCHEDULED = "scheduled"
+
+    class Config:
+        use_enum_values = True
 
 
 class Sensor(BaseModel):
@@ -24,7 +30,12 @@ class Sensor(BaseModel):
     type: str | None = None
     unit: str | None = None
     device_id: int | None = None
-    status: DeviceStatus = DeviceStatus.ONLINE
+
+
+class SensorUpdate(BaseModel):
+    name: str | None = None
+    type: str | None = None
+    unit: str | None = None
 
 
 class Actuator(BaseModel):
@@ -33,8 +44,18 @@ class Actuator(BaseModel):
     type: str | None = None
     device_id: int | None = None
     mode: DeviceMode = DeviceMode.MANUAL
-    status: DeviceStatus = DeviceStatus.ONLINE
 
+    class Config:
+        use_enum_values = True
+
+
+class ActuatorUpdate(BaseModel):
+    mode: DeviceMode | None = None
+    name: str | None = None
+    type: str | None = None
+
+    class Config:
+        use_enum_values = True
 
 class SensorReadingCreate(BaseModel):
     data: Dict[str, Any]
@@ -72,6 +93,9 @@ class Device(BaseModel):
     status: DeviceStatus = DeviceStatus.ONLINE
     access_token: str | None = None
 
+    class Config:
+        use_enum_values = True
+
 
 class DeviceUpdate(BaseModel):
     name: str | None = None
@@ -83,6 +107,9 @@ class DeviceUpdate(BaseModel):
     status: DeviceStatus | None = None
     access_token: str | None = None
     last_seen_at: datetime | None = None
+
+    class Config:
+        use_enum_values = True
 
 
 class Gateway(BaseModel):

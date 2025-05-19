@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-
-from app.domain.models import ModeSet, LightingSet, DisconnectDevice, RPCResponse
+from typing import Dict, Any
+from app.domain.models import DeviceUpdate, RPCResponse, ActuatorUpdate
 
 
 class MqttCloudClientRepository(ABC):
@@ -17,17 +17,17 @@ class MqttCloudClientRepository(ABC):
     # ------------------------------------------------------------
 
     @abstractmethod
-    async def set_mode(self, request: ModeSet) -> RPCResponse:
+    async def send_rpc_command(self, request: Dict[str, Any]) -> RPCResponse:
         pass
 
     @abstractmethod
-    async def set_lighting(self, request: LightingSet) -> RPCResponse:
+    async def delete_device(self, device_id: int) -> RPCResponse:
         pass
 
     @abstractmethod
-    async def test_rpc(self) -> RPCResponse:
+    async def update_device(self, device_id: int, device_update: DeviceUpdate) -> RPCResponse:
         pass
 
     @abstractmethod
-    async def disconnect_device(self, request: DisconnectDevice) -> RPCResponse:
+    async def update_actuator(self, actuator_id: int, actuator_update: ActuatorUpdate) -> RPCResponse:
         pass

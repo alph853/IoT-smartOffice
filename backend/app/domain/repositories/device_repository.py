@@ -25,6 +25,10 @@ class DeviceRepository(ABC):
         pass
 
     @abstractmethod
+    async def delete_all_devices(self) -> bool:
+        pass
+
+    @abstractmethod
     async def delete_device(self, device_id: str) -> bool:
         pass
 
@@ -46,6 +50,10 @@ class DeviceRepository(ABC):
 
     @abstractmethod
     async def get_actuator(self, id: int) -> Actuator:
+        pass
+
+    @abstractmethod
+    async def update_actuator(self, actuator_id: int, actuator: Actuator) -> Actuator:
         pass
 
     @abstractmethod

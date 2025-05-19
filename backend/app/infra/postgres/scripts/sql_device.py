@@ -23,23 +23,39 @@ WHERE id = $1
 RETURNING id, name, registered_at, mac_addr, description, fw_version, last_seen_at, model, office_id, gateway_id, status, access_token
 """
 
+DELETE_ALL_DEVICES = """
+DELETE FROM device
+"""
+
 DELETE_DEVICE = """
 DELETE FROM device WHERE id = $1
-RETURNING id
 """
 
 CREATE_SENSOR = """
-INSERT INTO sensor (name, type, unit, device_id, status)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, name, type, unit, device_id, status
+INSERT INTO sensor (name, type, unit, device_id)
+VALUES ($1, $2, $3, $4)
+RETURNING id, name, type, unit, device_id
+"""
+
+UPDATE_SENSOR = """
+UPDATE sensor
+SET {set_clauses}
+WHERE id = $1
+RETURNING id, name, type, unit, device_id
 """
 
 CREATE_ACTUATOR = """
-INSERT INTO actuator (name, type, device_id, mode, status)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, name, type, device_id, mode, status
+INSERT INTO actuator (name, type, device_id, mode)
+VALUES ($1, $2, $3, $4)
+RETURNING id, name, type, device_id, mode
 """
 
+UPDATE_ACTUATOR = """
+UPDATE actuator
+SET {set_clauses}
+WHERE id = $1
+RETURNING id, name, type, device_id, mode
+"""
 GET_ALL_SENSORS = """
 SELECT * FROM sensor
 """

@@ -4,10 +4,11 @@ from typing import Dict, Any, Optional
 from tb_gateway_mqtt import TBGatewayMqttClient
 import websockets
 from loguru import logger
+from websockets.client import ClientConnection
 
 from app.domain.events import EventBusInterface
 from app.domain.repositories import MqttCloudClientRepository, HttpClientRepository
-from app.domain.models import RPCResponse, ModeSet, LightingSet, Device
+from app.domain.models import RPCResponse, DeviceUpdate, ActuatorUpdate
 
 
 class ThingsboardClient(MqttCloudClientRepository):
@@ -36,7 +37,8 @@ class ThingsboardClient(MqttCloudClientRepository):
         self.device_name = device_name
         self.api = api
 
-        self._jwt = None
+        self._jwt     = None
+        self._rpc_api = None
 
     # -------------------------------------------------------------
     # ------------------------- Lifecycle -------------------------
@@ -44,6 +46,7 @@ class ThingsboardClient(MqttCloudClientRepository):
 
     async def connect(self):
         self._jwt = await self._get_jwt()
+        self._rpc_api = self._get_url_from_api(self.api.rpc)
         self.headers = self._get_headers_with_jwt()
         self._ws_listener_task = asyncio.create_task(self._thingsboard_ws_listener())
         logger.info(f"Thingsboard WS connected!")
@@ -63,25 +66,7 @@ class ThingsboardClient(MqttCloudClientRepository):
             async with websockets.connect(ws_url) as ws:
                 logger.info(f"Thingsboard WS listener started!")
                 try:
-                    subscription_req = {
-                        "tsSubCmds": [
-                            {
-                                "entityType": "DEVICE",
-                                "entityId": self.device_id,
-                                "scope": "LATEST_TELEMETRY",
-                                "cmdId": 10,
-                                "type": "TIMESERIES"
-                            },
-                            {
-                                "entityType": "DEVICE",
-                                "entityId": self.device_id,
-                                "scope": "LATEST_TELEMETRY",
-                                "cmdId": 11,
-                                "type": "NOTIFICATIONS"
-                            }
-                        ]
-                    }
-                    await ws.send(json.dumps(subscription_req))
+                    await self._ws_subscription_handle(ws)
 
                     async for message in ws:
                         try:
@@ -105,34 +90,50 @@ class ThingsboardClient(MqttCloudClientRepository):
     # ----------------------------- RPC ---------------------------
     # -------------------------------------------------------------
 
-    async def set_mode(self, request: ModeSet) -> RPCResponse:
-        logger.info(f"Setting mode to {request.params}")
-        url = self.api.rpc.format(device_id=self.device_id)
-        await self.http_client.request(url, payload=request.model_dump(), method="POST")
-
-    async def set_lighting(self, request: LightingSet) -> RPCResponse:
-        logger.info(f"Setting lighting to {request.params}")
-        url = self.api.rpc.format(device_id=self.device_id)
-        await self.http_client.request(url, payload=request.model_dump(), method="POST")
-
-    async def test_rpc(self, request: Dict[str, Any]) -> RPCResponse:
-        logger.info(f"Testing RPC")
-        url = self._get_url_from_api(self.api.rpc)
+    async def send_rpc_command(self, request: Dict[str, Any]) -> RPCResponse:
+        logger.info(f"Sending RPC command: {request}")
+        url = self._rpc_api
         resp = await self.http_client.request(url, payload=request, method="POST", headers=self.headers)
         return RPCResponse(**resp)
 
-    async def disconnect_device(self, device: Device) -> RPCResponse:
-        logger.info(f"Disconnecting device {device.id}")
-        url = self._get_url_from_api(self.api.rpc)
+    async def delete_device(self, device_id: int) -> RPCResponse:
+        logger.info(f"Deleting device {device_id}")
+        url = self._rpc_api
         payload = {
-            "method": "disconnectDevice",
+            "method": "deleteDevice",
             "params": {
-                "device_id": device.id
+                "device_id": device_id
             }
         }
         resp = await self.http_client.request(url, payload=payload, method="POST", headers=self.headers)
-        print(resp)
         return RPCResponse(**resp)
+
+    async def update_device(self, device_id: int, device_update: DeviceUpdate) -> RPCResponse:
+        logger.info(f"Updating device {device_id} with {device_update}")
+        url = self._rpc_api
+        payload = {
+            "method": "updateDevice",
+            "params": {
+                "device_id": device_id,
+                "device_update": device_update.model_dump()
+            }
+        }
+        resp = await self.http_client.request(url, payload=payload, method="POST", headers=self.headers)
+        return RPCResponse(**resp)
+
+    async def update_actuator(self, actuator_id: int, actuator_update: ActuatorUpdate) -> RPCResponse:
+        logger.info(f"Updating actuator {actuator_id} with {actuator_update}")
+        url = self._rpc_api
+        payload = {
+            "method": "updateActuator",
+            "params": {
+                "actuator_id": actuator_id,
+                "actuator_update": actuator_update.model_dump()
+            }
+        }
+        resp = await self.http_client.request(url, payload=payload, method="POST", headers=self.headers)
+        return RPCResponse(**resp)
+
     # -------------------------------------------------------------
     # ----------------------------- Helper ------------------------
     # -------------------------------------------------------------
@@ -160,3 +161,24 @@ class ThingsboardClient(MqttCloudClientRepository):
             "Authorization": f"Bearer {self._jwt}",
             "Content-Type": "application/json"
         }
+
+    async def _ws_subscription_handle(self, ws: ClientConnection):
+        subscription_req = {
+            "tsSubCmds": [
+                {
+                    "entityType": "DEVICE",
+                    "entityId": self.device_id,
+                    "scope": "LATEST_TELEMETRY",
+                    "cmdId": 10,
+                    "type": "TIMESERIES"
+                },
+                {
+                    "entityType": "DEVICE",
+                    "entityId": self.device_id,
+                    "scope": "LATEST_TELEMETRY",
+                    "cmdId": 11,
+                    "type": "NOTIFICATIONS"
+                }
+            ]
+        }
+        await ws.send(json.dumps(subscription_req))

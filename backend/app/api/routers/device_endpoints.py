@@ -68,6 +68,24 @@ async def connect_device(
     return device
 
 
+@router.patch("/disable/{device_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def disable_device(
+    device_id: int,
+    device_service: DeviceService = Depends(get_device_service),
+):
+    if not await device_service.disable_device(device_id):
+        raise HTTPException(status_code=404, detail="Device not found")
+
+
+@router.patch("/enable/{device_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def enable_device(
+    device_id: int,
+    device_service: DeviceService = Depends(get_device_service),
+):
+    if not await device_service.enable_device(device_id):
+        raise HTTPException(status_code=404, detail="Device not found")
+
+
 @router.patch("/{device_id}", response_model=Device)
 async def update_device(
     device_id: int,
@@ -79,6 +97,13 @@ async def update_device(
         raise HTTPException(status_code=404, detail="Invalid update. Perhaps check your request body.")
     return device
 
+
+@router.delete("/delete-all", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_all_devices(
+    device_service: DeviceService = Depends(get_device_service),
+):
+    if not await device_service.delete_all_devices():
+        raise HTTPException(status_code=404, detail="Device not found")
 
 @router.delete("/{device_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_device(
