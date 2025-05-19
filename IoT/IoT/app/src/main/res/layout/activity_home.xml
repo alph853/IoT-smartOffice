@@ -32,7 +32,7 @@
     <!-- Bottom Navigation -->
     <include
         android:id="@+id/nav_bar"
-        layout="@layout/nav_bar"
+        layout="@layout/nav_bar_home"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"

@@ -1,68 +1,63 @@
 package com.example.iot
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.TextView
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.tabs.TabLayout
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import java.util.*
+import kotlin.concurrent.fixedRateTimer
 
 class HomeActivity : AppCompatActivity() {
     
     companion object {
         private const val TAG = "HomeActivity"
-        private const val MCU_DETAIL_REQUEST = 100
     }
     
-    // MCU active status tracking
-    private val mcuActiveStatusOffice1 = mutableMapOf(
-        "mcu1" to true,
-        "mcu2" to true,
-        "mcu3" to false,
-        "mcu4" to true,
-        "mcu5" to false,
-        "mcu6" to false
-    )
+    // Room devices lists
+    private val bedroomDevices = mutableListOf<Device>()
+    private val livingRoomDevices = mutableListOf<Device>()
+    private val kitchenDevices = mutableListOf<Device>()
+    private val bathroomDevices = mutableListOf<Device>()
     
-    private val mcuActiveStatusOffice2 = mutableMapOf(
-        "mcu1" to true,
-        "mcu2" to false,
-        "mcu3" to false,
-        "mcu4" to true,
-        "mcu5" to true,
-        "mcu6" to false
-    )
+    // Device adapter
+    private lateinit var deviceAdapter: DeviceAdapter
     
-    private val mcuActiveStatusOffice3 = mutableMapOf(
-        "mcu1" to true,
-        "mcu2" to true,
-        "mcu3" to true,
-        "mcu4" to false,
-        "mcu5" to false,
-        "mcu6" to false
-    )
+    // UI references
+    private lateinit var roomTitle: TextView
+    private lateinit var devicesGrid: RecyclerView
+    private lateinit var temperatureValue: TextView
+    private lateinit var humidityValue: TextView
+    private lateinit var modeRadioGroup: RadioGroup
+    private lateinit var modeDescription: TextView
+    private lateinit var thresholdContainer: LinearLayout
+    private lateinit var disabledMessage: TextView
     
-    // Activity result launcher
-    private val mcuDetailLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val data = result.data ?: return@registerForActivityResult
-            
-            val mcuId = data.getStringExtra("MCU_ID") ?: return@registerForActivityResult
-            val mcuOffice = data.getStringExtra("MCU_OFFICE") ?: return@registerForActivityResult
-            val mcuStatus = data.getBooleanExtra("MCU_STATUS", false)
-            
-            // Update MCU status based on result
-            updateMCUStatusFromResult(mcuId, mcuOffice, mcuStatus)
-        }
-    }
+    // Current selected room
+    private var currentRoom = "Bedroom"
+    
+    // Current mode
+    private val _currentMode = MutableLiveData<Mode>(Mode.MANUAL)
+    val currentMode: LiveData<Mode> = _currentMode
+    
+    // Sensor data
+    private val _sensorData = MutableLiveData(SensorData())
+    val sensorData: LiveData<SensorData> = _sensorData
+    
+    // Thresholds map
+    private val thresholds = mutableMapOf<DeviceType, Threshold>()
+    
+    // Timer for sensor simulation
+    private var sensorTimer: Timer? = null
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,70 +72,147 @@ class HomeActivity : AppCompatActivity() {
         
         setContentView(R.layout.activity_home)
         
-        setupClickableRegions()
-        setupTabLayout()
-        updateMCUGroupStatuses()
+        // Initialize device data
+        initializeDeviceData()
+        
+        // Initialize thresholds
+        initializeThresholds()
+        
+        // Setup UI
+        setupUI()
+        
+        // Setup click listeners
+        setupClickListeners()
+        
+        // Setup mode control
+        setupModeControl()
+        
+        // Start sensor simulation
+        startSensorSimulation()
     }
     
-    private fun updateMCUStatusFromResult(mcuId: String, mcuOffice: String, isActive: Boolean) {
-        val officeId = when {
-            mcuOffice.contains("1") -> 1
-            mcuOffice.contains("2") -> 2
-            mcuOffice.contains("3") -> 3
-            else -> return
+    override fun onDestroy() {
+        super.onDestroy()
+        sensorTimer?.cancel()
+    }
+    
+    /**
+     * Initialize mock device data for all rooms
+     */
+    private fun initializeDeviceData() {
+        // Bedroom devices
+        bedroomDevices.add(Device("bed_fan", "Fan", DeviceType.FAN, R.drawable.ic_fan, false, "bedroom"))
+        bedroomDevices.add(Device("bed_ac", "AC", DeviceType.AC, R.drawable.ic_ac, true, "bedroom"))
+        bedroomDevices.add(Device("bed_ceiling", "Ceiling Light", DeviceType.CEILING_LIGHT, R.drawable.ic_ceiling_light, true, "bedroom"))
+        bedroomDevices.add(Device("bed_bulb", "Bulb", DeviceType.BULB, R.drawable.ic_bulb, false, "bedroom"))
+        bedroomDevices.add(Device("bed_purifier", "Purifier", DeviceType.PURIFIER, R.drawable.ic_purifier, false, "bedroom"))
+        bedroomDevices.add(Device("bed_climate", "Climate", DeviceType.CLIMATE, R.drawable.ic_climate, true, "bedroom"))
+        
+        // Living room devices
+        livingRoomDevices.add(Device("living_fan", "Fan", DeviceType.FAN, R.drawable.ic_fan, true, "living_room"))
+        livingRoomDevices.add(Device("living_ac", "AC", DeviceType.AC, R.drawable.ic_ac, false, "living_room"))
+        livingRoomDevices.add(Device("living_ceiling", "Ceiling Light", DeviceType.CEILING_LIGHT, R.drawable.ic_ceiling_light, true, "living_room"))
+        livingRoomDevices.add(Device("living_bulb", "Bulb", DeviceType.BULB, R.drawable.ic_bulb, true, "living_room"))
+        
+        // Kitchen devices
+        kitchenDevices.add(Device("kitchen_fan", "Fan", DeviceType.FAN, R.drawable.ic_fan, false, "kitchen"))
+        kitchenDevices.add(Device("kitchen_ceiling", "Ceiling Light", DeviceType.CEILING_LIGHT, R.drawable.ic_ceiling_light, true, "kitchen"))
+        kitchenDevices.add(Device("kitchen_bulb", "Bulb", DeviceType.BULB, R.drawable.ic_bulb, true, "kitchen"))
+        
+        // Bathroom devices
+        bathroomDevices.add(Device("bath_fan", "Fan", DeviceType.FAN, R.drawable.ic_fan, false, "bathroom"))
+        bathroomDevices.add(Device("bath_ceiling", "Ceiling Light", DeviceType.CEILING_LIGHT, R.drawable.ic_ceiling_light, false, "bathroom"))
+        bathroomDevices.add(Device("bath_bulb", "Bulb", DeviceType.BULB, R.drawable.ic_bulb, false, "bathroom"))
+    }
+    
+    /**
+     * Initialize default thresholds for devices
+     */
+    private fun initializeThresholds() {
+        // FAN: bật khi Temp ≥ 28°C, tắt khi Temp < 26°C
+        thresholds[DeviceType.FAN] = Threshold(28.0f, 26.0f, SensorType.TEMPERATURE)
+        
+        // AC: bật khi Temp ≥ 26°C, tắt khi Temp < 24°C
+        thresholds[DeviceType.AC] = Threshold(26.0f, 24.0f, SensorType.TEMPERATURE)
+        
+        // Ceiling Light: bật khi Lux < 50, tắt khi Lux ≥ 70
+        thresholds[DeviceType.CEILING_LIGHT] = Threshold(50.0f, 70.0f, SensorType.LIGHT)
+        
+        // Bulb: bật khi Lux < 50 và có motion=true
+        thresholds[DeviceType.BULB] = Threshold(50.0f, 70.0f, SensorType.LIGHT)
+        
+        // Purifier: bật khi PM2.5 > 75, tắt khi PM2.5 < 50
+        thresholds[DeviceType.PURIFIER] = Threshold(75.0f, 50.0f, SensorType.PM25)
+    }
+    
+    /**
+     * Setup UI elements
+     */
+    private fun setupUI() {
+        // Get UI references
+        roomTitle = findViewById(R.id.room_title)
+        devicesGrid = findViewById(R.id.devices_grid)
+        temperatureValue = findViewById(R.id.temperature_value)
+        humidityValue = findViewById(R.id.humidity_value)
+        modeRadioGroup = findViewById(R.id.mode_radio_group)
+        modeDescription = findViewById(R.id.mode_description)
+        thresholdContainer = findViewById(R.id.threshold_container)
+        disabledMessage = findViewById(R.id.disabled_message)
+        
+        // Setup RecyclerView
+        deviceAdapter = DeviceAdapter(bedroomDevices) { device, isOn ->
+            onDeviceToggled(device, isOn)
         }
         
-        val statusMap = when (officeId) {
-            1 -> mcuActiveStatusOffice1
-            2 -> mcuActiveStatusOffice2
-            3 -> mcuActiveStatusOffice3
-            else -> return
-        }
+        devicesGrid.layoutManager = GridLayoutManager(this, 2)
+        devicesGrid.adapter = deviceAdapter
         
-        statusMap[mcuId] = isActive
-        
-        // Update UI
-        when (officeId) {
-            1 -> updateOffice1MCUStatuses()
-            2 -> updateOffice2MCUStatuses()
-            3 -> updateOffice3MCUStatuses()
+        // Setup sensor observers
+        setupSensorObservers()
+    }
+    
+    /**
+     * Setup observers for sensor data
+     */
+    private fun setupSensorObservers() {
+        sensorData.observe(this) { data ->
+            // Update UI
+            temperatureValue.text = String.format("%.1f °C", data.temperature)
+            humidityValue.text = String.format("%.1f %%", data.humidity)
+            
+            // If in auto mode, apply auto logic
+            if (currentMode.value == Mode.AUTO) {
+                applyAutoLogic(data)
+            }
         }
     }
     
     /**
-     * Opens the MCU detail activity for the specified office and MCU ID
+     * Handle device toggle events
      */
-    private fun openMCUDetailActivity(officeId: Int, mcuId: Int) {
-        val statusMap = when (officeId) {
-            1 -> mcuActiveStatusOffice1
-            2 -> mcuActiveStatusOffice2
-            3 -> mcuActiveStatusOffice3
-            else -> return
-        }
+    private fun onDeviceToggled(device: Device, isOn: Boolean) {
+        // Only process in manual mode
+        if (currentMode.value != Mode.MANUAL) return
         
-        val mcuKey = "mcu$mcuId"
-        val mcuStatus = statusMap[mcuKey] ?: false
+        val status = if (isOn) "on" else "off"
+        Toast.makeText(this, "${device.name} turned $status", Toast.LENGTH_SHORT).show()
         
-        val intent = Intent(this, MCUDetailActivity::class.java)
-        intent.putExtra("MCU_ID", mcuId.toString())
-        intent.putExtra("MCU_OFFICE", "Office $officeId")
-        intent.putExtra("MCU_STATUS", mcuStatus)
-        
-        mcuDetailLauncher.launch(intent)
+        // In a real app, you would send commands to the actual IoT device here
     }
     
     /**
-     * Sets up the tab layout to switch between offices
+     * Setup click listeners for tabs and buttons
      */
-    private fun setupTabLayout() {
-        val tabLayout = findViewById<TabLayout>(R.id.office_tabs)
+    private fun setupClickListeners() {
+        // Setup room tabs selection listener
+        val tabLayout = findViewById<TabLayout>(R.id.room_tabs)
         tabLayout?.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 when (tab?.position) {
-                    0 -> showOffice1()
-                    1 -> showOffice2()
-                    2 -> showOffice3()
-                    3 -> showOffice4()
+                    0 -> showRoom("Bedroom")
+                    1 -> showRoom("Living Room")
+                    2 -> showRoom("Kitchen")
+                    3 -> showRoom("Bathroom")
                 }
             }
 
@@ -152,175 +224,196 @@ class HomeActivity : AppCompatActivity() {
                 // Not needed
             }
         })
-    }
-    
-    /**
-     * Updates all MCU group statuses for all offices
-     */
-    private fun updateMCUGroupStatuses() {
-        updateOffice1MCUStatuses()
-        updateOffice2MCUStatuses()
-        updateOffice3MCUStatuses()
-    }
-    
-    /**
-     * Updates the MCU statuses for Office 1
-     */
-    private fun updateOffice1MCUStatuses() {
-        // Count active MCUs in Group 1
-        val activeInGroup1 = countActiveMCUs(mcuActiveStatusOffice1, 1, 3)
-        findViewById<TextView>(R.id.mcu_group1_status)?.text = "$activeInGroup1 active"
         
-        // Count active MCUs in Group 2
-        val activeInGroup2 = countActiveMCUs(mcuActiveStatusOffice1, 4, 6)
-        findViewById<TextView>(R.id.mcu_group2_status)?.text = "$activeInGroup2 active"
+        // Setup add device button
+        findViewById<View>(R.id.add_device_button)?.setOnClickListener {
+            Toast.makeText(this, "Add device feature will be implemented", Toast.LENGTH_SHORT).show()
+        }
         
-        // Update individual MCU statuses
-        for (i in 1..6) {
-            val mcuStatusTextView = findViewById<TextView>(resources.getIdentifier("mcu${i}_status", "id", packageName))
-            val isActive = mcuActiveStatusOffice1["mcu$i"] ?: false
-            
-            mcuStatusTextView?.text = if (isActive) "Active" else "Inactive"
-            mcuStatusTextView?.setTextColor(resources.getColor(
-                if (isActive) android.R.color.holo_green_light else android.R.color.darker_gray,
-                theme
-            ))
+        // Setup navigation bar click regions
+        setupNavBarClickListeners()
+        
+        // Setup save thresholds button
+        findViewById<Button>(R.id.save_thresholds_button)?.setOnClickListener {
+            saveThresholds()
         }
     }
     
     /**
-     * Updates the MCU statuses for Office 2
+     * Save threshold values from UI
      */
-    private fun updateOffice2MCUStatuses() {
-        // Count active MCUs in Group 1
-        val activeInGroup1 = countActiveMCUs(mcuActiveStatusOffice2, 1, 3)
-        findViewById<TextView>(R.id.mcu_group1_office2_status)?.text = "$activeInGroup1 active"
-        
-        // Count active MCUs in Group 2
-        val activeInGroup2 = countActiveMCUs(mcuActiveStatusOffice2, 4, 6)
-        findViewById<TextView>(R.id.mcu_group2_office2_status)?.text = "$activeInGroup2 active"
-        
-        // Update individual MCU statuses
-        for (i in 1..6) {
-            val mcuStatusTextView = findViewById<TextView>(resources.getIdentifier("mcu${i}_office2_status", "id", packageName))
-            val isActive = mcuActiveStatusOffice2["mcu$i"] ?: false
+    private fun saveThresholds() {
+        try {
+            // Get values from EditTexts
+            val fanOnTemp = findViewById<EditText>(R.id.fan_on_threshold).text.toString().toFloat()
+            val fanOffTemp = findViewById<EditText>(R.id.fan_off_threshold).text.toString().toFloat()
+            thresholds[DeviceType.FAN] = Threshold(fanOnTemp, fanOffTemp, SensorType.TEMPERATURE)
             
-            mcuStatusTextView?.text = if (isActive) "Active" else "Inactive"
-            mcuStatusTextView?.setTextColor(resources.getColor(
-                if (isActive) android.R.color.holo_green_light else android.R.color.darker_gray,
-                theme
-            ))
+            val acOnTemp = findViewById<EditText>(R.id.ac_on_threshold).text.toString().toFloat()
+            val acOffTemp = findViewById<EditText>(R.id.ac_off_threshold).text.toString().toFloat()
+            thresholds[DeviceType.AC] = Threshold(acOnTemp, acOffTemp, SensorType.TEMPERATURE)
+            
+            val lightOnLux = findViewById<EditText>(R.id.light_on_threshold).text.toString().toFloat()
+            val lightOffLux = findViewById<EditText>(R.id.light_off_threshold).text.toString().toFloat()
+            thresholds[DeviceType.CEILING_LIGHT] = Threshold(lightOnLux, lightOffLux, SensorType.LIGHT)
+            
+            // Apply auto logic immediately
+            applyAutoLogic(sensorData.value ?: SensorData())
+            
+            Toast.makeText(this, "Thresholds saved successfully", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Error saving thresholds: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
     
     /**
-     * Updates the MCU statuses for Office 3
+     * Setup mode control UI and logic
      */
-    private fun updateOffice3MCUStatuses() {
-        // Count active MCUs in Group 1
-        val activeInGroup1 = countActiveMCUs(mcuActiveStatusOffice3, 1, 3)
-        findViewById<TextView>(R.id.mcu_group1_office3_status)?.text = "$activeInGroup1 active"
-        
-        // Count active MCUs in Group 2
-        val activeInGroup2 = countActiveMCUs(mcuActiveStatusOffice3, 4, 6)
-        findViewById<TextView>(R.id.mcu_group2_office3_status)?.text = "$activeInGroup2 active"
-        
-        // Update individual MCU statuses
-        for (i in 1..6) {
-            val mcuStatusTextView = findViewById<TextView>(resources.getIdentifier("mcu${i}_office3_status", "id", packageName))
-            val isActive = mcuActiveStatusOffice3["mcu$i"] ?: false
-            
-            mcuStatusTextView?.text = if (isActive) "Active" else "Inactive"
-            mcuStatusTextView?.setTextColor(resources.getColor(
-                if (isActive) android.R.color.holo_green_light else android.R.color.darker_gray,
-                theme
-            ))
-        }
-    }
-    
-    /**
-     * Counts the number of active MCUs in a given range
-     */
-    private fun countActiveMCUs(statusMap: Map<String, Boolean>, startId: Int, endId: Int): Int {
-        var count = 0
-        for (i in startId..endId) {
-            if (statusMap["mcu$i"] == true) {
-                count++
+    private fun setupModeControl() {
+        modeRadioGroup.setOnCheckedChangeListener { _, checkedId ->
+            when (checkedId) {
+                R.id.mode_manual -> {
+                    _currentMode.value = Mode.MANUAL
+                    modeDescription.text = "Manual mode: Toggle devices on/off manually"
+                    thresholdContainer.visibility = View.GONE
+                    disabledMessage.visibility = View.GONE
+                    devicesGrid.visibility = View.VISIBLE
+                }
+                R.id.mode_auto -> {
+                    _currentMode.value = Mode.AUTO
+                    modeDescription.text = "Auto mode: Devices activate based on sensor thresholds"
+                    thresholdContainer.visibility = View.VISIBLE
+                    disabledMessage.visibility = View.GONE
+                    devicesGrid.visibility = View.GONE
+                    
+                    // Apply auto logic immediately
+                    applyAutoLogic(sensorData.value ?: SensorData())
+                }
+                R.id.mode_disabled -> {
+                    _currentMode.value = Mode.DISABLED
+                    modeDescription.text = "Disabled mode: All devices are turned off"
+                    thresholdContainer.visibility = View.GONE
+                    disabledMessage.visibility = View.VISIBLE
+                    devicesGrid.visibility = View.GONE
+                    
+                    // Turn off all devices
+                    disableAllDevices()
+                }
             }
         }
-        return count
     }
     
     /**
-     * Shows the Office 1 content and hides other offices
+     * Apply auto logic based on sensor data and thresholds
      */
-    private fun showOffice1() {
-        findViewById<View>(R.id.office1_content)?.visibility = View.VISIBLE
-        findViewById<View>(R.id.office2_content)?.visibility = View.GONE
-        findViewById<View>(R.id.office3_content)?.visibility = View.GONE
-        findViewById<View>(R.id.office4_content)?.visibility = View.GONE
+    private fun applyAutoLogic(data: SensorData) {
+        // Only apply in AUTO mode
+        if (currentMode.value != Mode.AUTO) return
         
-        updateOffice1MCUStatuses()
+        val currentDevices = when (currentRoom) {
+            "Bedroom" -> bedroomDevices
+            "Living Room" -> livingRoomDevices
+            "Kitchen" -> kitchenDevices
+            "Bathroom" -> bathroomDevices
+            else -> bedroomDevices
+        }
+        
+        for (device in currentDevices) {
+            val threshold = thresholds[device.type] ?: continue
+            
+            when (threshold.sensorType) {
+                SensorType.TEMPERATURE -> {
+                    if (data.temperature >= threshold.on && !device.isOn) {
+                        device.isOn = true
+                        notifyDeviceChange(device, true)
+                    } else if (data.temperature < threshold.off && device.isOn) {
+                        device.isOn = false
+                        notifyDeviceChange(device, false)
+                    }
+                }
+                SensorType.LIGHT -> {
+                    if (device.type == DeviceType.BULB) {
+                        // Bulb requires both light threshold and motion
+                        if (data.light < threshold.on && data.motion && !device.isOn) {
+                            device.isOn = true
+                            notifyDeviceChange(device, true)
+                        } else if ((data.light >= threshold.off || !data.motion) && device.isOn) {
+                            device.isOn = false
+                            notifyDeviceChange(device, false)
+                        }
+                    } else {
+                        // Regular light control
+                        if (data.light < threshold.on && !device.isOn) {
+                            device.isOn = true
+                            notifyDeviceChange(device, true)
+                        } else if (data.light >= threshold.off && device.isOn) {
+                            device.isOn = false
+                            notifyDeviceChange(device, false)
+                        }
+                    }
+                }
+                SensorType.PM25 -> {
+                    if (data.pm25 > threshold.on && !device.isOn) {
+                        device.isOn = true
+                        notifyDeviceChange(device, true)
+                    } else if (data.pm25 < threshold.off && device.isOn) {
+                        device.isOn = false
+                        notifyDeviceChange(device, false)
+                    }
+                }
+                else -> {
+                    // Other sensor types not implemented yet
+                }
+            }
+        }
+        
+        // Notify adapter to update UI
+        deviceAdapter.notifyDataSetChanged()
     }
     
     /**
-     * Shows the Office 2 content and hides other offices
+     * Notify device state change
      */
-    private fun showOffice2() {
-        findViewById<View>(R.id.office1_content)?.visibility = View.GONE
-        findViewById<View>(R.id.office2_content)?.visibility = View.VISIBLE
-        findViewById<View>(R.id.office3_content)?.visibility = View.GONE
-        findViewById<View>(R.id.office4_content)?.visibility = View.GONE
-        
-        updateOffice2MCUStatuses()
+    private fun notifyDeviceChange(device: Device, isOn: Boolean) {
+        val status = if (isOn) "on" else "off"
+        Toast.makeText(this, "[AUTO] ${device.name} turned $status", Toast.LENGTH_SHORT).show()
     }
     
     /**
-     * Shows the Office 3 content and hides other offices
+     * Disable all devices
      */
-    private fun showOffice3() {
-        findViewById<View>(R.id.office1_content)?.visibility = View.GONE
-        findViewById<View>(R.id.office2_content)?.visibility = View.GONE
-        findViewById<View>(R.id.office3_content)?.visibility = View.VISIBLE
-        findViewById<View>(R.id.office4_content)?.visibility = View.GONE
+    private fun disableAllDevices() {
+        // Turn off all devices in all rooms
+        val allDevices = bedroomDevices + livingRoomDevices + kitchenDevices + bathroomDevices
+        for (device in allDevices) {
+            if (device.isOn) {
+                device.isOn = false
+                Toast.makeText(this, "[DISABLED] ${device.name} turned off", Toast.LENGTH_SHORT).show()
+            }
+        }
         
-        updateOffice3MCUStatuses()
+        // Notify adapter to update UI
+        deviceAdapter.notifyDataSetChanged()
     }
     
     /**
-     * Shows the Office 4 content and hides other offices
+     * Show the selected room and its devices
      */
-    private fun showOffice4() {
-        findViewById<View>(R.id.office1_content)?.visibility = View.GONE
-        findViewById<View>(R.id.office2_content)?.visibility = View.GONE
-        findViewById<View>(R.id.office3_content)?.visibility = View.GONE
-        findViewById<View>(R.id.office4_content)?.visibility = View.VISIBLE
-    }
-    
-    /**
-     * Sets up all clickable regions in the app
-     */
-    private fun setupClickableRegions() {
-        // Set up header click regions
-        setupHeaderClickListeners()
+    private fun showRoom(roomName: String) {
+        currentRoom = roomName
+        roomTitle.text = roomName
         
-        // Set up Office MCU click listeners
-        setupOffice1MCUClickListeners()
-        setupOffice2MCUClickListeners()
-        setupOffice3MCUClickListeners()
+        // Update device list in adapter based on selected room
+        when (roomName) {
+            "Bedroom" -> deviceAdapter.updateDevices(bedroomDevices)
+            "Living Room" -> deviceAdapter.updateDevices(livingRoomDevices)
+            "Kitchen" -> deviceAdapter.updateDevices(kitchenDevices)
+            "Bathroom" -> deviceAdapter.updateDevices(bathroomDevices)
+        }
         
-        // Set up navigation bar click regions
-        setupNavBarClickListeners()
-    }
-
-    /**
-     * Sets up the click listeners for the header components
-     */
-    private fun setupHeaderClickListeners() {
-        val headerView = findViewById<View>(R.id.header)
-        val profileButton = headerView?.findViewById<View>(R.id.profile_icon)
-        profileButton?.setOnClickListener {
-            Toast.makeText(this, "Profile clicked", Toast.LENGTH_SHORT).show()
+        // If in AUTO mode, apply auto logic with current sensor data
+        if (currentMode.value == Mode.AUTO) {
+            applyAutoLogic(sensorData.value ?: SensorData())
         }
     }
     
@@ -328,199 +421,60 @@ class HomeActivity : AppCompatActivity() {
      * Sets up the click listeners for the navigation bar components
      */
     private fun setupNavBarClickListeners() {
-        val navBarView = findViewById<View>(R.id.nav_bar)
+        val bottomNavigation = findViewById<BottomNavigationView>(R.id.bottom_navigation)
         
-        val navHome = navBarView?.findViewById<View>(R.id.home_button)
-        navHome?.setOnClickListener {
-            Toast.makeText(this, "Already on Home screen", Toast.LENGTH_SHORT).show()
-        }
-        
-        val navSettings = navBarView?.findViewById<View>(R.id.settings_button)
-        navSettings?.setOnClickListener {
-            Toast.makeText(this, "Settings screen will be implemented", Toast.LENGTH_SHORT).show()
-        }
-        
-        val navNotifications = navBarView?.findViewById<View>(R.id.notifications_button)
-        navNotifications?.setOnClickListener {
-            Toast.makeText(this, "Notifications screen will be implemented", Toast.LENGTH_SHORT).show()
+        bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> {
+                    Toast.makeText(this, "Already on Home screen", Toast.LENGTH_SHORT).show()
+                    true
+                }
+                R.id.nav_control -> {
+                    Toast.makeText(this, "Control screen will be implemented", Toast.LENGTH_SHORT).show()
+                    true
+                }
+                R.id.nav_camera -> {
+                    Toast.makeText(this, "Camera screen will be implemented", Toast.LENGTH_SHORT).show()
+                    true
+                }
+                R.id.nav_notifications -> {
+                    Toast.makeText(this, "Notifications screen will be implemented", Toast.LENGTH_SHORT).show()
+                    true
+                }
+                R.id.nav_settings -> {
+                    Toast.makeText(this, "Settings screen will be implemented", Toast.LENGTH_SHORT).show()
+                    true
+                }
+                else -> false
+            }
         }
     }
     
     /**
-     * Sets up click listeners for Office 1 MCUs
+     * Start sensor simulation timer
      */
-    private fun setupOffice1MCUClickListeners() {
-        // Set up Group 1 MCU click listeners
-        setupOffice1Group1ClickListeners()
-        
-        // Set up Group 2 MCU click listeners
-        setupOffice1Group2ClickListeners()
-    }
-    
-    /**
-     * Sets up click listeners for Office 1, Group 1 MCUs (1-3)
-     */
-    private fun setupOffice1Group1ClickListeners() {
-        findViewById<View>(R.id.mcu1_device_card)?.setOnClickListener {
-            onClickMCU_Office1_Group1(1)
+    private fun startSensorSimulation() {
+        sensorTimer = fixedRateTimer("sensor-timer", period = 5000) {
+            // Generate realistic sensor values with some fluctuation
+            val currentData = _sensorData.value ?: SensorData()
+            val tempChange = (Math.random() * 0.4 - 0.2).toFloat()
+            val humidityChange = (Math.random() * 2 - 1).toFloat()
+            val lightChange = (Math.random() * 10 - 5).toFloat()
+            val pm25Change = (Math.random() * 5 - 2.5).toFloat()
+            val motionChance = Math.random() > 0.7 // 30% chance of motion
+            
+            val newData = SensorData(
+                temperature = currentData.temperature + tempChange,
+                humidity = (currentData.humidity + humidityChange).coerceIn(20f, 90f),
+                light = (currentData.light + lightChange).coerceIn(10f, 200f),
+                pm25 = (currentData.pm25 + pm25Change).coerceIn(10f, 150f),
+                motion = motionChance
+            )
+            
+            runOnUiThread {
+                _sensorData.value = newData
+            }
         }
-        
-        findViewById<View>(R.id.mcu2_device_card)?.setOnClickListener {
-            onClickMCU_Office1_Group1(2)
-        }
-        
-        findViewById<View>(R.id.mcu3_device_card)?.setOnClickListener {
-            onClickMCU_Office1_Group1(3)
-        }
-    }
-    
-    /**
-     * Handler for clicks on Office 1, Group 1 MCUs
-     */
-    private fun onClickMCU_Office1_Group1(mcuId: Int) {
-        openMCUDetailActivity(1, mcuId)
-    }
-    
-    /**
-     * Sets up click listeners for Office 1, Group 2 MCUs (4-6)
-     */
-    private fun setupOffice1Group2ClickListeners() {
-        findViewById<View>(R.id.mcu4_device_card)?.setOnClickListener {
-            onClickMCU_Office1_Group2(4)
-        }
-        
-        findViewById<View>(R.id.mcu5_device_card)?.setOnClickListener {
-            onClickMCU_Office1_Group2(5)
-        }
-        
-        findViewById<View>(R.id.mcu6_device_card)?.setOnClickListener {
-            onClickMCU_Office1_Group2(6)
-        }
-    }
-    
-    /**
-     * Handler for clicks on Office 1, Group 2 MCUs
-     */
-    private fun onClickMCU_Office1_Group2(mcuId: Int) {
-        openMCUDetailActivity(1, mcuId)
-    }
-    
-    /**
-     * Sets up click listeners for Office 2 MCUs
-     */
-    private fun setupOffice2MCUClickListeners() {
-        // Set up Group 1 MCU click listeners
-        setupOffice2Group1ClickListeners()
-        
-        // Set up Group 2 MCU click listeners
-        setupOffice2Group2ClickListeners()
-    }
-    
-    /**
-     * Sets up click listeners for Office 2, Group 1 MCUs (1-3)
-     */
-    private fun setupOffice2Group1ClickListeners() {
-        findViewById<View>(R.id.mcu1_office2_device_card)?.setOnClickListener {
-            onClickMCU_Office2_Group1(1)
-        }
-        
-        findViewById<View>(R.id.mcu2_office2_device_card)?.setOnClickListener {
-            onClickMCU_Office2_Group1(2)
-        }
-        
-        findViewById<View>(R.id.mcu3_office2_device_card)?.setOnClickListener {
-            onClickMCU_Office2_Group1(3)
-        }
-    }
-    
-    /**
-     * Handler for clicks on Office 2, Group 1 MCUs
-     */
-    private fun onClickMCU_Office2_Group1(mcuId: Int) {
-        openMCUDetailActivity(2, mcuId)
-    }
-    
-    /**
-     * Sets up click listeners for Office 2, Group 2 MCUs (4-6)
-     */
-    private fun setupOffice2Group2ClickListeners() {
-        findViewById<View>(R.id.mcu4_office2_device_card)?.setOnClickListener {
-            onClickMCU_Office2_Group2(4)
-        }
-        
-        findViewById<View>(R.id.mcu5_office2_device_card)?.setOnClickListener {
-            onClickMCU_Office2_Group2(5)
-        }
-        
-        findViewById<View>(R.id.mcu6_office2_device_card)?.setOnClickListener {
-            onClickMCU_Office2_Group2(6)
-        }
-    }
-    
-    /**
-     * Handler for clicks on Office 2, Group 2 MCUs
-     */
-    private fun onClickMCU_Office2_Group2(mcuId: Int) {
-        openMCUDetailActivity(2, mcuId)
-    }
-    
-    /**
-     * Sets up click listeners for Office 3 MCUs
-     */
-    private fun setupOffice3MCUClickListeners() {
-        // Set up Group 1 MCU click listeners
-        setupOffice3Group1ClickListeners()
-        
-        // Set up Group 2 MCU click listeners
-        setupOffice3Group2ClickListeners()
-    }
-    
-    /**
-     * Sets up click listeners for Office 3, Group 1 MCUs (1-3)
-     */
-    private fun setupOffice3Group1ClickListeners() {
-        findViewById<View>(R.id.mcu1_office3_device_card)?.setOnClickListener {
-            onClickMCU_Office3_Group1(1)
-        }
-        
-        findViewById<View>(R.id.mcu2_office3_device_card)?.setOnClickListener {
-            onClickMCU_Office3_Group1(2)
-        }
-        
-        findViewById<View>(R.id.mcu3_office3_device_card)?.setOnClickListener {
-            onClickMCU_Office3_Group1(3)
-        }
-    }
-    
-    /**
-     * Handler for clicks on Office 3, Group 1 MCUs
-     */
-    private fun onClickMCU_Office3_Group1(mcuId: Int) {
-        openMCUDetailActivity(3, mcuId)
-    }
-    
-    /**
-     * Sets up click listeners for Office 3, Group 2 MCUs (4-6)
-     */
-    private fun setupOffice3Group2ClickListeners() {
-        findViewById<View>(R.id.mcu4_office3_device_card)?.setOnClickListener {
-            onClickMCU_Office3_Group2(4)
-        }
-        
-        findViewById<View>(R.id.mcu5_office3_device_card)?.setOnClickListener {
-            onClickMCU_Office3_Group2(5)
-        }
-        
-        findViewById<View>(R.id.mcu6_office3_device_card)?.setOnClickListener {
-            onClickMCU_Office3_Group2(6)
-        }
-    }
-    
-    /**
-     * Handler for clicks on Office 3, Group 2 MCUs
-     */
-    private fun onClickMCU_Office3_Group2(mcuId: Int) {
-        openMCUDetailActivity(3, mcuId)
     }
     
     /**
