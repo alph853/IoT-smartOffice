@@ -13,6 +13,10 @@ import androidx.core.view.updatePadding
 import android.app.AlertDialog
 import android.widget.EditText
 import android.widget.Button
+import android.widget.ImageButton
+import android.widget.PopupMenu
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 
 class MCUDetailActivity : AppCompatActivity() {
 
@@ -20,6 +24,7 @@ class MCUDetailActivity : AppCompatActivity() {
     private lateinit var mcu: MCU
     private lateinit var originalMCU: MCU
     private lateinit var currentRoom: Room
+    private lateinit var componentAdapter: ComponentAdapter
 
     companion object {
         private const val EXTRA_MCU_ID = "extra_mcu_id"
@@ -54,7 +59,6 @@ class MCUDetailActivity : AppCompatActivity() {
                 putExtra(EXTRA_MCU_NAME, mcu.name)
                 putExtra(EXTRA_MCU_STATUS, mcu.status)
                 putExtra(EXTRA_MCU_DESCRIPTION, mcu.description)
-                putExtra(EXTRA_MCU_MODE, mcu.mode)
                 putExtra(EXTRA_MCU_LOCATION, mcu.location)
                 putExtra(EXTRA_MCU_REGISTER_AT, mcu.registerAt)
                 putExtra(EXTRA_MCU_MAC_ADDRESS, mcu.macAddress)
@@ -108,7 +112,6 @@ class MCUDetailActivity : AppCompatActivity() {
                 name = intent.getStringExtra(EXTRA_MCU_NAME) ?: "New MCU",
                 status = intent.getStringExtra(EXTRA_MCU_STATUS) ?: "Offline",
                 description = intent.getStringExtra(EXTRA_MCU_DESCRIPTION) ?: "New Device",
-                mode = intent.getStringExtra(EXTRA_MCU_MODE) ?: "Manual",
                 location = intent.getStringExtra(EXTRA_MCU_LOCATION) ?: "Not set",
                 registerAt = intent.getStringExtra(EXTRA_MCU_REGISTER_AT) ?: "Not registered",
                 macAddress = intent.getStringExtra(EXTRA_MCU_MAC_ADDRESS) ?: "Not set",
@@ -136,15 +139,12 @@ class MCUDetailActivity : AppCompatActivity() {
 
         // Display MCU information
         displayMCUInfo()
+
+        // Setup component RecyclerView and menu
+        setupComponentSection()
     }
 
     private fun setupClickableItems() {
-        // Connected sensor section
-        findViewById<View>(R.id.connectedSensorLayout).setOnClickListener {
-            // Navigate to connected sensor screen
-            // TODO: Implement navigation to connected sensor screen
-        }
-
         // MCU Info section
         findViewById<View>(R.id.nameLayout).setOnClickListener {
             showEditDialog("Name", mcu.name) { newValue ->
@@ -161,10 +161,6 @@ class MCUDetailActivity : AppCompatActivity() {
                 findViewById<TextView>(R.id.tvDescription).text = newValue
                 saveMCUChanges()
             }
-        }
-
-        findViewById<View>(R.id.modeLayout).setOnClickListener {
-            showModeDialog()
         }
 
         findViewById<View>(R.id.locationLayout).setOnClickListener {
@@ -200,7 +196,7 @@ class MCUDetailActivity : AppCompatActivity() {
             }
         }
 
-        findViewById<View>(R.id.lastSeenAsLayout).setOnClickListener {
+        findViewById<View>(R.id.lastSeenLayout).setOnClickListener {
             showEditDialog("Last seen as", mcu.lastSeenAs) { newValue ->
                 mcu.lastSeenAs = newValue
                 findViewById<TextView>(R.id.tvLastSeenAs).text = newValue
@@ -220,7 +216,6 @@ class MCUDetailActivity : AppCompatActivity() {
     private fun displayMCUInfo() {
         findViewById<TextView>(R.id.tvName).text = mcu.name
         findViewById<TextView>(R.id.tvDescription).text = mcu.description
-        findViewById<TextView>(R.id.tvMode).text = mcu.mode
         findViewById<TextView>(R.id.tvLocation).text = mcu.location
         findViewById<TextView>(R.id.tvRegisterAt).text = mcu.registerAt
         findViewById<TextView>(R.id.tvMacAddress).text = mcu.macAddress
@@ -256,20 +251,6 @@ class MCUDetailActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun showModeDialog() {
-        val modes = arrayOf("Manual", "Schedule", "Auto", "Remote")
-        
-        AlertDialog.Builder(this)
-            .setTitle("Select Mode")
-            .setItems(modes) { _, which ->
-                val selectedMode = modes[which]
-                mcu.mode = selectedMode
-                findViewById<TextView>(R.id.tvMode).text = selectedMode
-                saveMCUChanges()
-            }
-            .show()
-    }
-
     private fun saveMCUChanges() {
         currentRoom.updateMCU(originalMCU, mcu)
         originalMCU = mcu.copy() // Update the original MCU reference
@@ -297,6 +278,43 @@ class MCUDetailActivity : AppCompatActivity() {
                 startActivity(intent)
                 finish()
             }
+        }
+    }
+
+    private fun setupComponentSection() {
+        val rvComponents = findViewById<RecyclerView>(R.id.rvComponents)
+        componentAdapter = ComponentAdapter(mcu.components, this) {
+            saveMCUChanges()
+        }
+        rvComponents.layoutManager = LinearLayoutManager(this)
+        rvComponents.adapter = componentAdapter
+
+        val btnMenu = findViewById<ImageButton>(R.id.btnComponentMenu)
+        btnMenu.setOnClickListener { v ->
+            val popup = PopupMenu(this, v)
+            popup.menu.add(0, 0, 0, "Add")
+            popup.menu.add(0, 1, 1, "Remove")
+            popup.menu.add(0, 2, 2, "Modify")
+            popup.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    0 -> { // Add
+                        mcu.components.add(Component())
+                        componentAdapter.notifyItemInserted(mcu.components.size - 1)
+                        saveMCUChanges()
+                        true
+                    }
+                    1 -> { // Remove
+                        componentAdapter.setRemoveMode(!componentAdapter.isRemoveMode())
+                        true
+                    }
+                    2 -> { // Modify
+                        componentAdapter.setModifyMode(!componentAdapter.isModifyMode())
+                        true
+                    }
+                    else -> false
+                }
+            }
+            popup.show()
         }
     }
 

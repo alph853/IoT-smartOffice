@@ -73,53 +73,72 @@
         app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
         app:layout_constraintTop_toBottomOf="@id/header_layout">
 
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-
             android:paddingStart="20dp"
             android:paddingEnd="20dp"
             android:paddingTop="27dp"
             android:orientation="vertical">
 
-            <!-- Connected sensor section -->
+            <!-- Component Section -->
             <LinearLayout
-                android:id="@+id/connectedSensorLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_setting_item"
-                android:gravity="center_vertical"
-                android:paddingStart="20dp"
-                android:paddingEnd="20dp"
-                android:paddingTop="12dp"
-                android:paddingBottom="12dp"
-                android:clickable="true"
-                android:focusable="true">
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Connected sensor"
-                    android:textColor="@color/white"
-                    android:textSize="14sp"
-                    android:textStyle="bold"/>
+                    android:text="Component"
+                    android:textColor="@color/grey"
+                    android:textSize="12sp"
+                    android:layout_marginStart="8dp"/>
 
-                <ImageView
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:src="@drawable/ic_front" />
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <ImageButton
+                    android:id="@+id/btnComponentMenu"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/ic_menu"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Component Menu"
+                    android:layout_marginEnd="4dp" />
             </LinearLayout>
 
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvComponents"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:overScrollMode="never"
+                android:clipToPadding="false"
+                android:paddingBottom="8dp" />
+
             <!-- MCU Info Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="MCU information"
+                android:textColor="@color/grey"
+                android:textSize="12sp"
+                android:layout_marginStart="8dp"
+                android:layout_marginBottom="8dp"
+                android:layout_marginTop="42dp"/>
+
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="@drawable/bg_setting_item"
-                android:layout_marginTop="56dp">
+                android:background="@drawable/bg_setting_item">
 
-                <!-- Name -->
+
                 <LinearLayout
                     android:id="@+id/nameLayout"
                     android:layout_width="match_parent"
@@ -198,41 +217,6 @@
                     android:layout_height="1dp"
                     android:background="@color/divider" />
 
-                <!-- Mode -->
-                <LinearLayout
-                    android:id="@+id/modeLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:paddingStart="20dp"
-                    android:paddingEnd="20dp"
-                    android:paddingTop="12dp"
-                    android:paddingBottom="12dp"
-                    android:clickable="true"
-                    android:focusable="true">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Mode"
-                        android:textColor="@color/white"
-                        android:layout_weight="1"
-                        android:textSize="14sp"
-                        android:textStyle="bold"/>
-
-
-                    <TextView
-                        android:id="@+id/tvMode"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Mode"
-                        android:textColor="@color/grey"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-
-                </LinearLayout>
-
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
@@ -281,7 +265,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:background="@drawable/bg_setting_item"
-                android:layout_marginTop="56dp">
+                android:layout_marginTop="42dp">
 
                 <!-- Register at -->
                 <LinearLayout
@@ -403,7 +387,7 @@
 
                 <!-- Last seen as -->
                 <LinearLayout
-                    android:id="@+id/lastSeenAsLayout"
+                    android:id="@+id/lastSeenLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
@@ -417,7 +401,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Last seen as"
+                        android:text="Last seen"
                         android:textColor="@color/white"
                         android:layout_weight="1"
                         android:textSize="14sp"
@@ -427,7 +411,7 @@
                         android:id="@+id/tvLastSeenAs"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Last seen as"
+                        android:text="Last seen"
                         android:textColor="@color/grey"
                         android:textSize="14sp"
                         android:textStyle="bold" />

@@ -57,7 +57,6 @@ class MCUAdapter(
         val mcu = room.getMCUs()[position]
         holder.tvMCUName.text = mcu.name
         holder.tvMCUDesc.text = mcu.description
-        holder.tvMode.text = mcu.mode
         holder.tvStatus.text = mcu.status
         
         // Store the context for dialog use
@@ -101,13 +100,9 @@ class MCUAdapter(
             holder.tvMCUDesc.setOnClickListener {
                 showEditDialog(holder.tvMCUDesc, mcu, "description")
             }
-            holder.tvMode.setOnClickListener {
-                showModeDialog(mcu)
-            }
         } else {
             holder.tvMCUName.setOnClickListener(null)
             holder.tvMCUDesc.setOnClickListener(null)
-            holder.tvMode.setOnClickListener(null)
         }
 
         // Set card size to be square: edge = (device width - 60dp) / 2
@@ -141,7 +136,6 @@ class MCUAdapter(
         val textSize = (cardEdge * 12 / 190).toFloat()
         holder.tvMCUName.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize)
         holder.tvMCUDesc.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize)
-        holder.tvMode.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize * 10 / 12)
         holder.tvStatus.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize * 10 / 12)
 
         // Set MCU TextView marginTop proportionally to card width (20/190 ratio)
@@ -217,33 +211,7 @@ class MCUAdapter(
         
         dialog.show()
     }
-    
-    private fun showModeDialog(mcu: MCU) {
-        // Use the stored context or return if null
-        val context = viewContext ?: return
-        
-        val modes = arrayOf("Manual", "Schedule", "Auto", "Remote")
-        
-        val dialog = AlertDialog.Builder(context)
-            .setTitle("Select Mode")
-            .setItems(modes) { dialog, which ->
-                val selectedMode = modes[which]
-                // Create updated MCU with new mode
-                val updatedMCU = mcu.copy(mode = selectedMode)
-                // Update the MCU in the room
-                room.updateMCU(mcu, updatedMCU)
-                // Find position by MCU ID and notify the specific item change
-                val position = room.getMCUs().indexOfFirst { it.id == mcu.id }
-                if (position != -1) {
-                    notifyItemChanged(position)
-                }
-                dialog.dismiss()
-            }
-            .create()
-            
-        dialog.show()
-    }
-    
+
     private fun showStatusDialog(position: Int) {
         // Use the stored context or return if null
         val context = viewContext ?: return
@@ -268,7 +236,6 @@ class MCUAdapter(
     class MCUViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val tvMCUName: TextView = itemView.findViewById(R.id.tvMCUName)
         val tvMCUDesc: TextView = itemView.findViewById(R.id.tvMCUDesc)
-        val tvMode: TextView = itemView.findViewById(R.id.tvMode)
         val tvStatus: TextView = itemView.findViewById(R.id.tvStatus)
         val imgMCU: ImageView = itemView.findViewById(R.id.imgMCU)
         val imgRemove: ImageButton = itemView.findViewById(R.id.imgRemove)
