@@ -28,6 +28,7 @@ class BroadcastService:
             "setMode": self._set_mode,
             "setLighting": self._set_lighting,
             "setFanState": self._set_fan_state,
+            "setAutoThreshold": self._set_auto_threshold,
             "test": self._test,
         }
 
@@ -97,27 +98,37 @@ class BroadcastService:
 
     async def _set_lighting(self, request: Dict[str, Any]):
         try:
-            LightingSet(**request)
+            lighting_set = LightingSet(**request)
         except Exception as e:
-            logger.error(f"Error in sending lighting command: {e}")
-            await self._broadcast(json.dumps({"error": "Sending lighting command failed. Perhaps check your format?"}))
+            logger.error(f"Lighting command invalid: {e}")
+            await self._broadcast(json.dumps({"error": "Lighting command invalid. Perhaps check your format?"}))
         else:
-            rpc_response = await self.cloud_client.send_rpc_command(request)
+            rpc_response = await self.cloud_client.set_lighting(lighting_set)
             await self._broadcast(json.dumps(rpc_response.model_dump()))
 
     async def _set_fan_state(self, request: Dict[str, Any]):
         try:
-            FanStateSet(**request)
+            fan_state_set = FanStateSet(**request)
         except Exception as e:
-            logger.error(f"Error in sending fan state command: {e}")
-            await self._broadcast(json.dumps({"error": "Sending fan state command failed. Perhaps check your format?"}))
+            logger.error(f"Fan state command invalid: {e}")
+            await self._broadcast(json.dumps({"error": "Fan state command invalid. Perhaps check your format?"}))
         else:
-            rpc_response = await self.cloud_client.send_rpc_command(request)
+            rpc_response = await self.cloud_client.set_fan_state(fan_state_set)
             await self._broadcast(json.dumps(rpc_response.model_dump()))
 
     async def _test(self, request: Dict[str, Any]):
         rpc_response = await self.cloud_client.send_rpc_command(request)
         await self._broadcast(json.dumps(rpc_response.model_dump()))
+
+    async def _set_auto_threshold(self, request: Dict[str, Any]):
+        try:
+            auto_range = AutoRange(**request)
+        except Exception as e:
+            logger.error(f"Auto range command invalid: {e}")
+            await self._broadcast(json.dumps({"error": "Auto range command invalid. Perhaps check your format?"}))
+        else:
+            rpc_response = await self.cloud_client.set_auto_threshold(auto_range)
+            await self._broadcast(json.dumps(rpc_response.model_dump()))
 
     async def _broadcast(self, message: str):
         print(f"Broadcasting message: {message}")
