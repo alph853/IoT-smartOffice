@@ -46,8 +46,6 @@ class Container(containers.DeclarativeContainer):
         client_id    = config.thingsboard.client_id,
         device_name  = config.thingsboard.device_name,
         event_bus    = event_bus,
-        cache_client = cache_client,
-        gw_client    = mosquitto_client,
         topics       = config.thingsboard.topics,
         loop         = loop,
     )

@@ -8,10 +8,9 @@ from typing import Dict, Any
 
 from src.domain.models import DeviceRegistration, Device
 from src.domain.repositories import MqttGatewayClientRepository, CacheClientRepository
-
 from src.domain.events import (
     EventBusInterface, RegisterRequestEvent, TelemetryEvent, ControlResponseEvent,
-    InvalidMessageEvent, TestEvent
+    InvalidMessageEvent, TestEvent, SetLightingEvent, SetFanStateEvent, RPCTestEvent
 )
 
 
@@ -90,6 +89,42 @@ class MosquittoClient(MqttGatewayClientRepository):
         await self._unsubscribe_topics(topics)
 
         logger.info(f"Disconnected device {device.id}")
+
+    async def set_lighting(self, event: SetLightingEvent) -> bool:
+        payload = {
+            "method": "setLighting",
+            "params": event.model_dump()
+        }
+        device_id = self.cache_client.get_device_id_by_actuator_id(event.actuator_id)
+        if device_id:
+            topic = self.topics['rpc_request']['topic'] + str(device_id)
+            if await self.client.publish(topic, json.dumps(payload)):
+                return True
+        return False
+
+    async def set_fan_state(self, event: SetFanStateEvent) -> bool:
+        payload = {
+            "method": "setFanState",
+            "params": event.model_dump()
+        }
+        device_id = self.cache_client.get_device_id_by_actuator_id(event.actuator_id)
+        if device_id:
+            topic = self.topics['rpc_request']['topic'] + str(device_id)
+            if await self.client.publish(topic, json.dumps(payload)):
+                return True
+        return False
+
+    async def send_test_command(self, event: RPCTestEvent) -> bool:
+        payload = {
+            "method": "test",
+            "params": event.model_dump()
+        }
+        device_id = self.cache_client.get_device_id_by_actuator_id(event.actuator_id)
+        if device_id:
+            topic = self.topics['rpc_request']['topic'] + str(device_id)
+            if await self.client.publish(topic, json.dumps(payload)):
+                return True
+        return False
 
 
     # -------------------------------------------------------------

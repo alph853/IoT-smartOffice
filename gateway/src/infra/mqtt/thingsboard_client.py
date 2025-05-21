@@ -3,17 +3,15 @@ from aiomqtt import Client, Message, MessagesIterator
 import asyncio
 from loguru import logger
 
-from src.domain.events import EventBusInterface
+from src.domain.events import *
 from src.domain.repositories import MqttCloudClientRepository, CacheClientRepository, MqttGatewayClientRepository
-from src.domain.models import RPCResponse, Device
+from src.domain.models import Device
 from tb_gateway_mqtt import TBGatewayMqttClient
 
 
 class ThingsboardClient(MqttCloudClientRepository):
     def __init__(self, broker_url: str,
                  event_bus: EventBusInterface,
-                 cache_client: CacheClientRepository,
-                 gw_client: MqttGatewayClientRepository,
                  password: str,
                  broker_port: int = 1883,
                  client_id: str = "",
@@ -30,8 +28,6 @@ class ThingsboardClient(MqttCloudClientRepository):
         self.password     = password
         self.event_bus    = event_bus
         self.device_name  = device_name
-        self.cache_client = cache_client
-        self.gw_client    = gw_client
 
         self.client = None
         self.topics = topics
@@ -73,8 +69,10 @@ class ThingsboardClient(MqttCloudClientRepository):
     def send_attributes(self, device: str, attributes: dict, qos: int = 1):
         return self.client.gw_send_attributes(device, attributes, qos)
 
-    def send_rpc_reply(self, device: str, method: str, params: dict, qos: int = 1):
-        return self.client.gw_send_rpc_reply(device, method, params, qos)
+    def send_rpc_reply(self, request_id: str, response: dict, device: str | None = None, qos: int = 1):
+        if not device:
+            device = self.device_name
+        return self.client.gw_send_rpc_reply(device, request_id, response, qos)
 
     # -------------------------------------------------------------
     # ------------------------- Callback -------------------------
@@ -87,70 +85,50 @@ class ThingsboardClient(MqttCloudClientRepository):
         logger.info(f"RPC {request_id} has been called with params {content}")
         task = self.loop.create_task(self._handle_rpc_async(request_id, content))
         task.add_done_callback(self._handle_rpc_task_done)
-        
+
     def _handle_rpc_task_done(self, task):
         try:
             task.result()
             logger.info(f"RPC has been handled successfully")
         except Exception as e:
             logger.error(f"Error in RPC task: {str(e)}", exc_info=True)
-            
+
     async def _handle_rpc_async(self, request_id, content):
+        event = None
         method = content.get("method")
         params = content.get("params", {})
 
-        response = None
-
         try:
             if method == "deleteDevice":
-                device_id = params.get("device_id")
-                device = await self.cache_client.get_device_by_id(device_id)
-                await self.gw_client.disconnect_device(device)
-                if device:
-                    if await self.cache_client.delete_device(device_id):
-                        response = RPCResponse(status="success", data={"message": "Device disconnected"})
-                        self.disconnect_device(device)
-                else:
-                    response = RPCResponse(status="error", data={"message": "Device not found"})
+                event = DeleteDeviceEvent(**params)
+                await self.event_bus.publish(event)
             elif method == "updateDevice":
-                device_id = params.get("device_id")
-                device = await self.cache_client.get_device_by_id(device_id)
-                if device:
-                    status = params["device_update"].get("status", None)
-                    if status == "disabled":
-                        await self.gw_client.disconnect_device(device)
-                        if await self.cache_client.update_device(device_id, params):
-                            response = RPCResponse(status="success", data={"message": "Device updated"})
-                            self.disconnect_device(device)
-                    elif status == "online":
-                        await self.gw_client.connect_device(device)
-                        if await self.cache_client.update_device(device_id, params):
-                            response = RPCResponse(status="success", data={"message": "Device updated"})
-                            self.connect_device(device)
-                else:
-                    response = RPCResponse(status="error", data={"message": "Device not found"})
+                event = UpdateDeviceEvent(**params)
+                await self.event_bus.publish(event)
             elif method == "gateway_device_deleted":
-                logger.info(f"Gateway device deleted")
-
+                event = GatewayDeviceDeletedEvent(request_id=request_id)
+                await self.event_bus.publish(event)
             elif method == "updateActuator":
-                response = RPCResponse(status="success", data={"message": "Actuator updated"})
+                event = UpdateActuatorEvent(**params)
+                await self.event_bus.publish(event)
             elif method == "setMode":
-                response = RPCResponse(status="success", data={"message": "Mode set"})
+                event = SetModeEvent(**params)
+                await self.event_bus.publish(event)
             elif method == "setLighting":
-                response = RPCResponse(status="success", data={"message": "Lighting set"})
+                event = SetLightingEvent(**params)
+                await self.event_bus.publish(event)
             elif method == "setFanState":
-                response = RPCResponse(status="success", data={"message": "Fan state set"})
+                event = SetFanStateEvent(**params)
+                await self.event_bus.publish(event)
             elif method == "test":
-                response = RPCResponse(status="success", data={"message": f"Get message: {content}"})
+                event = RPCTestEvent(**params)
+                await self.event_bus.publish(event)
             else:
-                response = RPCResponse(status="error", data={"message": "RPC method not found"})
-
+                event = UnknownEvent(**params)
+                await self.event_bus.publish(event)
         except Exception as e:
-            logger.error(f"Error in RPC task: {str(e)}", exc_info=True)
-            response = RPCResponse(status="error", data={"message": f"There is an error in handling RPC method {content}"})
-        
-        if not response:
-            response = RPCResponse(status="error", data={"message": f"There is an error in the RPC method {content}"})
-
-        logger.info(f"Sending RPC reply for {self.device_name} with request_id {request_id} and response {response.model_dump()}")
-        self.send_rpc_reply(self.device_name, request_id, response.model_dump(), 1)
+            logger.error(f"Error in RPC task: {str(e)}")
+            event = InvalidRPCEvent(params=params, method=method)
+        finally:
+            event.request_id = request_id
+            await self.event_bus.publish(event)

@@ -1,11 +1,26 @@
 from .event_bus import EventBusInterface, EventHandler
 from .gateway_event import RegisterRequestEvent, InvalidMessageEvent, TestEvent
 from .telemetry_event import TelemetryEvent
-from .control_event import ControlResponseEvent, ControlCommandEvent
+from .rpc_event import (
+    DeleteDeviceEvent,
+    UpdateDeviceEvent,
+    GatewayDeviceDeletedEvent,
+    UpdateActuatorEvent,
+    SetModeEvent,
+    SetLightingEvent,
+    SetFanStateEvent,
+    RPCTestEvent,
+    InvalidRPCEvent,
+    UnknownEvent
+)
 
 
 __all__ = ["EventBusInterface", "EventHandler",
            "RegisterRequestEvent", "InvalidMessageEvent",
-           "TelemetryEvent", "ControlResponseEvent",
-           "ControlCommandEvent", "TestEvent"
+           "TelemetryEvent", "DeleteDeviceEvent",
+           "UpdateDeviceEvent", "GatewayDeviceDeletedEvent",
+           "UpdateActuatorEvent", "SetModeEvent",
+           "SetLightingEvent", "SetFanStateEvent",
+           "RPCTestEvent", "InvalidRPCEvent",
+           "UnknownEvent"
            ]

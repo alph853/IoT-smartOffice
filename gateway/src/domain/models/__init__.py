@@ -1,5 +1,6 @@
 from .notification import Notification
-from .device import Device, DeviceRegistration, DeviceCreate
-from .gateway import RPCResponse
+from .device import Device, DeviceRegistration, DeviceCreate, DeviceMode, DeviceStatus
+from .rpc import RPCResponse
 
-__all__ = ["Notification", "Device", "DeviceRegistration", "DeviceCreate", "RPCResponse"]
+__all__ = ["Notification", "Device", "DeviceRegistration", "DeviceCreate", "RPCResponse",
+           "DeviceMode", "DeviceStatus"]

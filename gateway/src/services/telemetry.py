@@ -3,6 +3,7 @@ from loguru import logger
 
 from src.domain.repositories import MqttCloudClientRepository, CacheClientRepository
 from src.domain.events import EventBusInterface, TelemetryEvent
+from src.domain.models import DeviceMode, DeviceStatus
 
 
 class TelemetryService:
@@ -12,7 +13,7 @@ class TelemetryService:
                  ):
         self.cache_client = cache_client
         self.cloud_client = cloud_client
-        self.event_bus = event_bus
+        self.event_bus    = event_bus
 
     async def start(self):
         await self.event_bus.subscribe(TelemetryEvent, self._handle_telemetry)
@@ -26,6 +27,14 @@ class TelemetryService:
         device = await self.cache_client.get_device_by_id(event.device_id)
         if device:
             logger.info(f"Sending telemetry to {device.name} with {event.data}")
-            self.cloud_client.send_telemetry(device.name, event.data)
+            try:
+                status = self.cache_client.get_status(device.id)
+                mode   = self.cache_client.get_mode(device.id)
+                if status == DeviceStatus.ONLINE:
+                    self.cloud_client.send_telemetry(device.name, event.data)
+                if mode == DeviceMode.AUTO:
+                    pass
+            except Exception as e:
+                logger.error(f"Error sending telemetry to {device.name}: {e}")
         else:
             logger.error(f"Device not found: {event.device_id}")
