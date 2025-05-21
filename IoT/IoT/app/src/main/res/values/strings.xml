@@ -33,4 +33,24 @@
     <string name="turn_on">Turn On</string>
     <string name="turn_off">Turn Off</string>
     <string name="active_devices">Active devices</string>
+    <string name="sensor_title">Sensors</string>
+    <string name="temperature">Temperature</string>
+    <string name="humidity">Humidity</string>
+    <string name="temperature_value_default">25.0 °C</string>
+    <string name="humidity_value_default">60.0 %</string>
+    <string name="temperature_icon_desc">Temperature icon</string>
+    <string name="humidity_icon_desc">Humidity icon</string>
+    <string name="back_button_desc">Back</string>
+    <string name="profile_icon_desc">Profile</string>
+    <string name="add_device_desc">Add device</string>
+    <string name="device_icon_desc">Device icon</string>
+    <string name="device_name_default">Device</string>
+    <string name="device_status_off">Off</string>
+    <string name="header_title_control">Control</string>
+    <string name="header_subtitle">We only deliver good service. Start now!</string>
+    <string name="mode_control_title">Mode Control</string>
+    <string name="mode_manual">Manual</string>
+    <string name="mode_auto">Auto</string>
+    <string name="mode_disabled">Disabled</string>
+    <string name="mode_manual_desc">Manual mode: Toggle devices on/off manually</string>
 </resources>

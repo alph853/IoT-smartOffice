@@ -485,7 +485,6 @@ class HomeActivity : AppCompatActivity() {
         intent.putExtra("ROOM_NAME", roomName)
         intent.putExtra("ROOM_LOCATION", "A4 Building")
         intent.putExtra("ACTIVE_DEVICES", 3)
-        intent.putExtra("ROOM_ICON", R.drawable.ic_room)
         startActivity(intent)
     }
 } 

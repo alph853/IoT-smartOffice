@@ -8,16 +8,6 @@
     android:fitsSystemWindows="true"
     tools:context=".RoomDetailActivity">
 
-    <!-- Status bar -->
-    <include
-        android:id="@+id/status_bar"
-        layout="@layout/status_bar"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
     <!-- Header with back button -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/header"
@@ -29,7 +19,7 @@
         android:paddingBottom="16dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/status_bar">
+        app:layout_constraintTop_toTopOf="parent">
 
         <!-- Back Button -->
         <ImageView
@@ -38,7 +28,8 @@
             android:layout_height="48dp"
             android:padding="12dp"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
-            android:tint="@android:color/white"
+            app:tint="@android:color/white"
+            android:contentDescription="@string/back_button_desc"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -50,7 +41,8 @@
             android:layout_height="48dp"
             android:padding="12dp"
             android:src="@drawable/ic_pfp"
-            android:tint="@android:color/white"
+            app:tint="@android:color/white"
+            android:contentDescription="@string/profile_icon_desc"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -105,6 +97,7 @@
                 android:foreground="?attr/selectableItemBackground"
                 android:clickable="true"
                 android:focusable="true"
+                android:contentDescription="@string/add_device_desc"
                 app:cardBackgroundColor="#FF5252"
                 app:cardCornerRadius="30dp"
                 app:cardElevation="4dp">
@@ -114,7 +107,8 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:src="@android:drawable/ic_input_add"
-                    android:tint="@android:color/white" />
+                    app:tint="@android:color/white"
+                    android:contentDescription="@string/add_device_desc" />
             </androidx.cardview.widget.CardView>
         </LinearLayout>
     </ScrollView>
