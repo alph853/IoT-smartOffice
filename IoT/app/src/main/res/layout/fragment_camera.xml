@@ -8,54 +8,103 @@
     android:background="@color/background_black"
     tools:context=".MainActivity">
 
-    <!-- Home screen content (header and content) -->
-
+    <!-- Header with company name and profile icon -->
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/home_screen"
+        android:id="@+id/header_layout"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_height="wrap_content"
+        android:background="@color/dark_header"
+        android:paddingStart="20dp"
+        android:paddingTop="81dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="38dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <!-- Header with company name, tagline and profile icon -->
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/header_layout"
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/tv_company_name"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@color/dark_header"
-            android:paddingStart="20dp"
-            android:paddingTop="81dp"
-            android:paddingEnd="20dp"
-            android:paddingBottom="38dp"
-            app:layout_constraintEnd_toEndOf="parent"
+            android:text="Camera"
+            android:textColor="@color/white"
+            android:textSize="32sp"
+            android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintTop_toTopOf="parent" />
 
-            <TextView
-                android:id="@+id/tv_company_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Camera"
-                android:textColor="@color/white"
-                android:textSize="32sp"
-                android:textStyle="bold"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <ImageView
-                android:id="@+id/iv_profile"
-                android:layout_width="42dp"
-                android:layout_height="42dp"
-                android:contentDescription="Profile icon"
-                android:src="@drawable/ic_profile"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
+        <ImageView
+            android:id="@+id/iv_profile"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:contentDescription="Profile icon"
+            android:src="@drawable/ic_profile"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- Subtitle -->
+        <TextView
+            android:id="@+id/tv_subtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="36dp"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:text="Monitor your offices with AI-powered multimedia retrieval!"
+            android:textColor="@color/white"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:gravity="center"
+            app:layout_constraintTop_toBottomOf="@id/header_layout" />
+
+        <!-- Search/Prompt Input Field -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginTop="24dp"
+            app:cardCornerRadius="10dp"
+            app:cardBackgroundColor="@color/card_black"
+            app:layout_constraintTop_toBottomOf="@id/tv_subtitle">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingTop="11dp"
+                android:paddingBottom="11dp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp">
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@drawable/ic_search"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_prompt"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@null"
+                    android:hint="Enter your prompt"
+                    android:textColorHint="@color/grey"
+                    android:textColor="@color/white"
+                    android:textSize="14sp"
+                    android:inputType="textMultiLine"
+                    android:maxLines="4"
+                    android:minLines="1"
+                    android:scrollbars="vertical"
+                    android:gravity="top|start"
+                    android:imeOptions="actionDone"/>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
