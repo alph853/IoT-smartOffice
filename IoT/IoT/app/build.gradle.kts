@@ -20,11 +20,16 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        debug {
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
     compileOptions {
@@ -41,6 +46,28 @@ android {
     lint {
         abortOnError = false
         checkReleaseBuilds = false
+    }
+
+    // Optimize resource packaging
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            pickFirsts += "lib/armeabi-v7a/libc++_shared.so"
+            pickFirsts += "lib/arm64-v8a/libc++_shared.so"
+        }
+    }
+
+    // Enable resource shrinking
+    bundle {
+        language {
+            enableSplit = true
+        }
+        density {
+            enableSplit = true
+        }
+        abi {
+            enableSplit = true
+        }
     }
 }
 
