@@ -118,11 +118,15 @@ class ControlFragment : Fragment() {
         thresholdContainer = view.findViewById(R.id.threshold_container)
         disabledMessage = view.findViewById(R.id.disabled_message)
         // Setup RecyclerView
-        deviceAdapter = DeviceAdapter(bedroomDevices) { device, isOn ->
+        deviceAdapter = DeviceAdapter { device, isOn ->
             onDeviceToggled(device, isOn)
         }
         devicesGrid.layoutManager = GridLayoutManager(requireContext(), 2)
         devicesGrid.adapter = deviceAdapter
+        
+        // Fix: cập nhật thiết bị phòng Bedroom ngay lần đầu
+        deviceAdapter.updateDevices(bedroomDevices)
+        
         // Setup sensor observers
         setupSensorObservers()
     }
@@ -141,6 +145,26 @@ class ControlFragment : Fragment() {
         if (currentMode.value != Mode.MANUAL) return
         val status = if (isOn) getString(R.string.device_turned_on, device.name) else getString(R.string.device_turned_off, device.name)
         Toast.makeText(requireContext(), status, Toast.LENGTH_SHORT).show()
+        // Clone list mới và update trạng thái thiết bị
+        val devices = getDevicesForCurrentRoom().map {
+            if (it.id == device.id) it.copy(isOn = isOn) else it
+        }
+        deviceAdapter.updateDevices(devices)
+        // Nếu cần, cập nhật lại list gốc cho phòng hiện tại
+        when (currentRoom) {
+            getString(R.string.room_bedroom) -> {
+                bedroomDevices.clear(); bedroomDevices.addAll(devices)
+            }
+            getString(R.string.room_living_room) -> {
+                livingRoomDevices.clear(); livingRoomDevices.addAll(devices)
+            }
+            getString(R.string.room_kitchen) -> {
+                kitchenDevices.clear(); kitchenDevices.addAll(devices)
+            }
+            getString(R.string.room_bathroom) -> {
+                bathroomDevices.clear(); bathroomDevices.addAll(devices)
+            }
+        }
     }
 
     private fun setupClickListeners(view: View) {

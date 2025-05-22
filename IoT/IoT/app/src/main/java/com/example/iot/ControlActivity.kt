@@ -142,12 +142,15 @@ class ControlActivity : AppCompatActivity() {
         disabledMessage = findViewById(R.id.disabled_message)
         
         // Setup RecyclerView
-        deviceAdapter = DeviceAdapter(bedroomDevices) { device, isOn ->
+        deviceAdapter = DeviceAdapter { device, isOn ->
             onDeviceToggled(device, isOn)
         }
         
         devicesGrid.layoutManager = GridLayoutManager(this, 2)
         devicesGrid.adapter = deviceAdapter
+        
+        // Fix: cập nhật thiết bị phòng Bedroom ngay lần đầu
+        deviceAdapter.updateDevices(bedroomDevices)
         
         // Setup sensor observers
         setupSensorObservers()

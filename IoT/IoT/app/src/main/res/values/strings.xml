@@ -74,4 +74,10 @@
     <string name="actuators">Actuators</string>
     <string name="all_devices_disabled">All devices disabled</string>
     <string name="coming_soon">Coming soon...</string>
+    <string name="all">All</string>
+    <string name="read">Read</string>
+    <string name="unread">Unread</string>
+    <string name="mark_all_read">Mark all as read</string>
+    <string name="mark_all_unread">Mark all as unread</string>
+    <string name="delete_all">DELETE ALL</string>
 </resources>

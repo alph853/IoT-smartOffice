@@ -7,25 +7,59 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.widget.SwitchCompat
 import androidx.cardview.widget.CardView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 
 /**
  * Adapter for displaying IoT devices in a grid
  */
 class DeviceAdapter(
-    private var devices: List<Device>,
     private val onToggleListener: (Device, Boolean) -> Unit
-) : RecyclerView.Adapter<DeviceAdapter.DeviceViewHolder>() {
+) : ListAdapter<Device, DeviceAdapter.DeviceViewHolder>(DeviceDiffCallback()) {
 
     /**
      * ViewHolder for device items in the grid
      */
-    class DeviceViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    inner class DeviceViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val deviceCard: CardView = itemView.findViewById(R.id.device_card)
         val deviceIcon: ImageView = itemView.findViewById(R.id.device_icon)
         val deviceName: TextView = itemView.findViewById(R.id.device_name)
         val deviceStatus: TextView = itemView.findViewById(R.id.device_status)
         val deviceSwitch: SwitchCompat = itemView.findViewById(R.id.device_switch)
+        private var lastClickTime = 0L
+        fun bind(device: Device) {
+            // Set device icon
+            deviceIcon.setImageResource(device.iconResId)
+            // Set device name
+            deviceName.text = device.name
+            // Set device status text
+            deviceStatus.text = if (device.isOn) deviceStatus.context.getString(R.string.turn_on) else deviceStatus.context.getString(R.string.turn_off)
+            // Set device status text color
+            deviceStatus.setTextColor(
+                itemView.context.resources.getColor(
+                    if (device.isOn) android.R.color.holo_orange_light else android.R.color.darker_gray,
+                    itemView.context.theme
+                )
+            )
+            // Set switch state without triggering listener
+            deviceSwitch.setOnCheckedChangeListener(null)
+            deviceSwitch.isChecked = device.isOn
+            // Set switch listener (debounce, UI phản hồi ngay, callback nhẹ)
+            deviceSwitch.setOnCheckedChangeListener { _, isChecked ->
+                val now = System.currentTimeMillis()
+                if (now - lastClickTime > 300) {
+                    lastClickTime = now
+                    if (device.isOn != isChecked) {
+                        // UI phản hồi ngay
+                        onToggleListener(device.copy(isOn = isChecked), isChecked)
+                    }
+                } else {
+                    // revert UI nếu double click
+                    deviceSwitch.isChecked = device.isOn
+                }
+            }
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DeviceViewHolder {
@@ -34,68 +68,33 @@ class DeviceAdapter(
     }
 
     override fun onBindViewHolder(holder: DeviceViewHolder, position: Int) {
-        val device = devices[position]
-        
-        // Set device icon
-        holder.deviceIcon.setImageResource(device.iconResId)
-        
-        // Set device name
-        holder.deviceName.text = device.name
-        
-        // Set device status text
-        holder.deviceStatus.text = if (device.isOn) holder.deviceStatus.context.getString(R.string.turn_on) else holder.deviceStatus.context.getString(R.string.turn_off)
-        
-        // Set device status text color
-        holder.deviceStatus.setTextColor(
-            holder.itemView.context.resources.getColor(
-                if (device.isOn) android.R.color.holo_orange_light else android.R.color.darker_gray,
-                holder.itemView.context.theme
-            )
-        )
-        
-        // Set switch state without triggering listener
-        holder.deviceSwitch.setOnCheckedChangeListener(null)
-        holder.deviceSwitch.isChecked = device.isOn
-        
-        // Set switch listener
-        holder.deviceSwitch.setOnCheckedChangeListener { _, isChecked ->
-            if (device.isOn != isChecked) {
-                device.isOn = isChecked
-                onToggleListener(device, isChecked)
-            }
-        }
+        val device = getItem(position)
+        holder.bind(device)
     }
 
-    override fun getItemCount(): Int = devices.size
-    
     /**
      * Updates the device list and refreshes the adapter
      */
     fun updateDevices(newDevices: List<Device>) {
-        if (devices.size == newDevices.size && devices.map { it.id } == newDevices.map { it.id }) {
-            devices.forEachIndexed { index, device ->
-                if (device != newDevices[index]) {
-                    devices = newDevices
-                    notifyItemChanged(index)
-                }
-            }
-        } else {
-            devices = newDevices
-            if (devices.size != newDevices.size) notifyDataSetChanged()
-        }
+        submitList(newDevices)
     }
 
     /**
      * Lọc danh sách thiết bị chỉ lấy Actuator
      */
     fun getActuators(): List<Device> {
-        return devices.filter { it.isActuator() }
+        return getCurrentList().filter { it.isActuator() }
     }
 
     /**
      * Lọc danh sách thiết bị chỉ lấy Sensor
      */
     fun getSensors(): List<Device> {
-        return devices.filter { it.isSensor() }
+        return getCurrentList().filter { it.isSensor() }
     }
+}
+
+class DeviceDiffCallback : DiffUtil.ItemCallback<Device>() {
+    override fun areItemsTheSame(oldItem: Device, newItem: Device): Boolean = oldItem.id == newItem.id
+    override fun areContentsTheSame(oldItem: Device, newItem: Device): Boolean = oldItem == newItem
 } 
