@@ -43,7 +43,7 @@ class DeviceAdapter(
         holder.deviceName.text = device.name
         
         // Set device status text
-        holder.deviceStatus.text = if (device.isOn) "On" else "Off"
+        holder.deviceStatus.text = if (device.isOn) holder.deviceStatus.context.getString(R.string.turn_on) else holder.deviceStatus.context.getString(R.string.turn_off)
         
         // Set device status text color
         holder.deviceStatus.setTextColor(
@@ -72,8 +72,17 @@ class DeviceAdapter(
      * Updates the device list and refreshes the adapter
      */
     fun updateDevices(newDevices: List<Device>) {
-        devices = newDevices
-        notifyDataSetChanged()
+        if (devices.size == newDevices.size && devices.map { it.id } == newDevices.map { it.id }) {
+            devices.forEachIndexed { index, device ->
+                if (device != newDevices[index]) {
+                    devices = newDevices
+                    notifyItemChanged(index)
+                }
+            }
+        } else {
+            devices = newDevices
+            if (devices.size != newDevices.size) notifyDataSetChanged()
+        }
     }
 
     /**

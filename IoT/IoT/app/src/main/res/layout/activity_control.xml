@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="@color/background_black"
     android:fitsSystemWindows="true"
-    tools:context=".HomeActivity">
+    tools:context=".ControlActivity">
 
     <!-- Header with profile icon -->
     <include
@@ -17,6 +17,17 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Content -->
+    <include
+        android:id="@+id/content_include"
+        layout="@layout/content"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@id/nav_bar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/header" />
 
     <!-- Bottom Navigation -->
     <include

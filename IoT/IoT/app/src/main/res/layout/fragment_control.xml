@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="@color/background_black"
     android:fitsSystemWindows="true"
-    tools:context=".HomeActivity">
+    tools:context=".ControlFragment">
 
     <!-- Header with profile icon -->
     <include
@@ -18,14 +18,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Bottom Navigation -->
+    <!-- Content (tab phòng, grid thiết bị, sensor, threshold, ...) -->
     <include
-        android:id="@+id/nav_bar"
-        layout="@layout/nav_bar"
+        android:id="@+id/content_include"
+        layout="@layout/content"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/header" />
+
+    <!-- Bottom Navigation (ẩn đi, chỉ dùng navigation bar của MainActivity) -->
 
 </androidx.constraintlayout.widget.ConstraintLayout> 

@@ -9,7 +9,7 @@
         android:id="@+id/mode_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Mode Control"
+        android:text="@string/mode_control_title"
         android:textColor="@android:color/white"
         android:textSize="16sp"
         android:textStyle="bold"
@@ -32,7 +32,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:checked="true"
-            android:text="Manual"
+            android:text="@string/mode_manual"
             android:textColor="@android:color/white" />
 
         <RadioButton
@@ -40,7 +40,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Auto"
+            android:text="@string/mode_auto"
             android:textColor="@android:color/white" />
 
         <RadioButton
@@ -48,7 +48,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Disabled"
+            android:text="@string/mode_disabled"
             android:textColor="@android:color/white" />
     </RadioGroup>
 
@@ -57,7 +57,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Manual mode: Toggle devices on/off manually"
+        android:text="@string/mode_manual_desc"
         android:textColor="#AAAAAA"
         android:textSize="12sp"
         app:layout_constraintEnd_toEndOf="parent"
