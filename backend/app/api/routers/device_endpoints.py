@@ -14,9 +14,10 @@ router = APIRouter(prefix="/devices")
 
 @router.get("/", response_model=List[Device])
 async def get_devices(
+    return_components: bool = Query(False, description="Whether to return sensors and actuators"),
     device_service: DeviceService = Depends(get_device_service),
 ):
-    devices = await device_service.get_devices()
+    devices = await device_service.get_devices(return_components=return_components)
     return devices
 
 
@@ -37,9 +38,10 @@ async def get_all_actuators(
 @router.get("/{device_id}", response_model=Device)
 async def get_device_by_id(
     device_id: int,
+    return_components: bool = Query(False, description="Whether to return sensors and actuators"),
     device_service: DeviceService = Depends(get_device_service),
 ):
-    device = await device_service.get_device_by_id(device_id)
+    device = await device_service.get_device_by_id(device_id, return_components=return_components)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
     return device

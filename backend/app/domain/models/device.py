@@ -92,6 +92,8 @@ class Device(BaseModel):
     gateway_id: int
     status: DeviceStatus = DeviceStatus.ONLINE
     access_token: str | None = None
+    sensors: List[Sensor] | None = None
+    actuators: List[Actuator] | None = None
 
     class Config:
         use_enum_values = True

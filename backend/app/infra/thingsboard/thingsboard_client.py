@@ -1,6 +1,7 @@
 import json
 import asyncio
 import websockets
+from typing import Dict, Any, Tuple
 from loguru import logger
 from websockets.client import ClientConnection
 
@@ -106,12 +107,6 @@ class ThingsboardClient(MqttCloudClientRepository):
         logger.info(f"Setting fan state: {fan_state_set}")
         url = self._rpc_api
         resp = await self.http_client.request(url, payload=fan_state_set.model_dump(), method="POST", headers=self.headers)
-        return RPCResponse(**resp)
-
-    async def set_auto_threshold(self, auto_range: AutoRange) -> RPCResponse:
-        logger.info(f"Setting auto threshold: {auto_range}")
-        url = self._rpc_api
-        resp = await self.http_client.request(url, payload=auto_range.model_dump(), method="POST", headers=self.headers)
         return RPCResponse(**resp)
 
     async def delete_device(self, device_id: int) -> RPCResponse:

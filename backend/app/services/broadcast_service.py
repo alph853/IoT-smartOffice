@@ -28,7 +28,6 @@ class BroadcastService:
             "setMode": self._set_mode,
             "setLighting": self._set_lighting,
             "setFanState": self._set_fan_state,
-            "setAutoThreshold": self._set_auto_threshold,
             "test": self._test,
         }
 
@@ -119,16 +118,6 @@ class BroadcastService:
     async def _test(self, request: Dict[str, Any]):
         rpc_response = await self.cloud_client.send_rpc_command(request)
         await self._broadcast(json.dumps(rpc_response.model_dump()))
-
-    async def _set_auto_threshold(self, request: Dict[str, Any]):
-        try:
-            auto_range = AutoRange(**request)
-        except Exception as e:
-            logger.error(f"Auto range command invalid: {e}")
-            await self._broadcast(json.dumps({"error": "Auto range command invalid. Perhaps check your format?"}))
-        else:
-            rpc_response = await self.cloud_client.set_auto_threshold(auto_range)
-            await self._broadcast(json.dumps(rpc_response.model_dump()))
 
     async def _broadcast(self, message: str):
         print(f"Broadcasting message: {message}")

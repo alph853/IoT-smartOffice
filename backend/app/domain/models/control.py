@@ -1,6 +1,6 @@
 from pydantic import BaseModel
-from typing import List
 from enum import Enum
+from typing import Tuple
 
 
 COLOR_MAP = {
@@ -31,7 +31,7 @@ class RPCResponse(BaseModel):
 # Parameter Models
 class LightingSetParams(BaseModel):
     brightness: int = 100
-    color: SupportedColor | List[int, int, int]
+    color: SupportedColor | Tuple[int, int, int]
     actuator_id: int | None = None
 
 
@@ -43,6 +43,7 @@ class FanStateSetParams(BaseModel):
 # RPC Request Models
 class LightingSet(RPCRequest):
     params: LightingSetParams
+
 
 class FanStateSet(RPCRequest):
     params: FanStateSetParams

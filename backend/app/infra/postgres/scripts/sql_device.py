@@ -1,4 +1,3 @@
-
 GET_ALL_DEVICES = """
 SELECT * FROM device
 """
@@ -79,6 +78,14 @@ VALUES ($1, $2, $3, $4)
 
 GET_ALL_SENSOR_READINGS = """
 SELECT * FROM sensor_reading
+"""
+
+GET_SENSORS_BY_DEVICE_ID = """
+SELECT * FROM sensor WHERE device_id = $1
+"""
+
+GET_ACTUATORS_BY_DEVICE_ID = """
+SELECT * FROM actuator WHERE device_id = $1
 """
 
 
