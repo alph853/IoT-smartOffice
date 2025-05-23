@@ -22,7 +22,7 @@ class HttpClientRepository(ABC):
     # -------------------------------------------------------------
 
     @abstractmethod
-    async def get_all_devices(self) -> List[Device]:
+    async def get_all_devices(self, return_components: bool = False) -> List[Device]:
         pass
 
     @abstractmethod

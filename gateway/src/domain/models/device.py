@@ -16,22 +16,10 @@ class DeviceMode(Enum):
     AUTO = "auto"
     MANUAL = "manual"
     SCHEDULED = "scheduled"
-    
-
-class Device(BaseModel):
-    id: int
-    name: str
-    fw_version: str
-    status: DeviceStatus
-    access_token: str | None = None
-    mac_addr: str
-    office_id: int
-
-    class Config:
-        use_enum_values = True
 
 
 class Sensor(BaseModel):
+    id: int
     name: str
     description: str | None = None
     unit: str | None = None
@@ -43,11 +31,27 @@ class Sensor(BaseModel):
 
 
 class Actuator(BaseModel):
+    id: int
     name: str
     description: str | None = None
     mode: DeviceMode | None = None
     status: DeviceStatus | None = None
     type: str | None = None
+
+    class Config:
+        use_enum_values = True
+
+
+class Device(BaseModel):
+    id: int
+    name: str
+    fw_version: str
+    status: DeviceStatus
+    access_token: str | None = None
+    mac_addr: str
+    office_id: int
+    sensors: List[Sensor] | None = None
+    actuators: List[Actuator] | None = None
 
     class Config:
         use_enum_values = True

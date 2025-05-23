@@ -63,7 +63,7 @@
         "db": 0
     },
     "mosquitto": {
-        "url": "192.168.1.100",
+        "url": "",
         "port": 1883,
         "topics": {
             "test": {
@@ -117,7 +117,7 @@
         }
     },
     "backend": {
-        "url": "http://192.168.1.195:8000",
+        "url": "http://192.168.1.180:8000",
         "api": {
             "get_all_devices": {
                 "url": "/devices",

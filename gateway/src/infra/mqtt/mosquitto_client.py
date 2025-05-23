@@ -27,7 +27,7 @@ class MosquittoClient(MqttGatewayClientRepository):
         self.event_bus   = event_bus
         self.cache_client = cache_client
         self.topics      = topics
-
+        self.pending_requests = {}  # Dictionary to store pending request futures
         self.client = None
 
 
@@ -65,9 +65,17 @@ class MosquittoClient(MqttGatewayClientRepository):
         ]
         await asyncio.gather(*subscription_tasks)
 
+        # Prepare response with device ID and component IDs
+        response_data = {
+            "status": "OK",
+            "device_id": device.id,
+            "sensors": [{"name": sensor.name, "id": i} for i, sensor in enumerate(device.sensors)] if device.sensors else [],
+            "actuators": [{"name": actuator.name, "id": i} for i, actuator in enumerate(device.actuators)] if device.actuators else []
+        }
+
         topic = self.topics['register_response']['topic'].format(device_id=device.mac_addr)
-        print(f"Registering device {device.id} to topic {topic}")
-        await self.client.publish(topic, f"OK,id={device.id}")
+        logger.info(f"Registering device {device.id} to topic {topic}")
+        await self.client.publish(topic, json.dumps(response_data))
 
     async def connect_device(self, device: Device):
         topics = "telemetry", "control_response"
@@ -98,8 +106,8 @@ class MosquittoClient(MqttGatewayClientRepository):
         device_id = self.cache_client.get_device_id_by_actuator_id(event.actuator_id)
         if device_id:
             topic = self.topics['rpc_request']['topic'] + str(device_id)
-            if await self.client.publish(topic, json.dumps(payload)):
-                return True
+            await self.client.publish(topic, json.dumps(payload))
+            return await self._wait_for_response(event.request_id)
         return False
 
     async def set_fan_state(self, event: SetFanStateEvent) -> bool:
@@ -108,11 +116,11 @@ class MosquittoClient(MqttGatewayClientRepository):
             "params": event.model_dump()
         }
         device_id = self.cache_client.get_device_id_by_actuator_id(event.actuator_id)
-        if device_id:
-            topic = self.topics['rpc_request']['topic'] + str(device_id)
-            if await self.client.publish(topic, json.dumps(payload)):
-                return True
-        return False
+        if not device_id:
+            return False
+        topic = self.topics['rpc_request']['topic'] + str(device_id)
+        await self.client.publish(topic, json.dumps(payload))
+        return await self._wait_for_response(event.request_id)
 
     async def send_test_command(self, event: RPCTestEvent) -> bool:
         payload = {
@@ -120,11 +128,11 @@ class MosquittoClient(MqttGatewayClientRepository):
             "params": event.model_dump()
         }
         device_id = self.cache_client.get_device_id_by_actuator_id(event.actuator_id)
-        if device_id:
-            topic = self.topics['rpc_request']['topic'] + str(device_id)
-            if await self.client.publish(topic, json.dumps(payload)):
-                return True
-        return False
+        if not device_id:
+            return False
+        topic = self.topics['rpc_request']['topic'] + str(device_id)
+        await self.client.publish(topic, json.dumps(payload))
+        return await self._wait_for_response(event.request_id)
 
 
     # -------------------------------------------------------------
@@ -170,6 +178,15 @@ class MosquittoClient(MqttGatewayClientRepository):
                 event = TelemetryEvent(device_id=device_id, data=payload)
             elif topic.startswith(self.topics['control_response']['topic']):
                 event = ControlResponseEvent(**payload)
+                # Check if this is a response we're waiting for
+                request_id = payload.get('request_id')
+                if request_id and request_id in self.pending_requests:
+                    future = self.pending_requests[request_id]
+                    if not future.done():
+                        if payload.get('status') == 'success':
+                            future.set_result(True)
+                        else:
+                            future.set_result(False)
             else:
                 event = InvalidMessageEvent(topic=str(topic), payload=str(payload), error="Not implemented error")
         finally:
@@ -226,3 +243,16 @@ class MosquittoClient(MqttGatewayClientRepository):
         subscription_tasks = [self.client.unsubscribe(topic) for topic in topics]
         await asyncio.gather(*subscription_tasks)
         logger.info(f"Unsubscribed from {len(topics)} topics: \n{'\n'.join(topics)}")
+
+    async def _wait_for_response(self, request_id: str) -> bool:
+        response_future = asyncio.Future()
+        self.pending_requests[request_id] = response_future
+
+        try:
+            result = await asyncio.wait_for(response_future, timeout=2.0)
+            return result
+        except asyncio.TimeoutError:
+            logger.warning(f"Timeout waiting for response to request {request_id}")
+            return False
+        finally:
+            self.pending_requests.pop(request_id, None)

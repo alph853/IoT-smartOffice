@@ -27,12 +27,13 @@ class HttpClient(HttpClientRepository):
     # ------------------------- Device ----------------------------
     # -------------------------------------------------------------
 
-    async def get_all_devices(self) -> List[Device]:
+    async def get_all_devices(self, return_components: bool = False) -> List[Device]:
         api = self.api['get_all_devices']
         url = f"{self.url}{api['url']}"
         response = await self._send_request(
             url=url,
             method=api['method'],
+            params={'return_components': str(return_components).lower()}
             )
         return [Device(**device) for device in response]
 

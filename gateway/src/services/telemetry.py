@@ -28,12 +28,10 @@ class TelemetryService:
         if device:
             logger.info(f"Sending telemetry to {device.name} with {event.data}")
             try:
-                status = self.cache_client.get_status(device.id)
-                mode   = self.cache_client.get_mode(device.id)
+                status = await self.cache_client.get_status(device.id)
+                # mode   = await self.cache_client.get_mode(device.id)
                 if status == DeviceStatus.ONLINE:
                     self.cloud_client.send_telemetry(device.name, event.data)
-                if mode == DeviceMode.AUTO:
-                    pass
             except Exception as e:
                 logger.error(f"Error sending telemetry to {device.name}: {e}")
         else:
