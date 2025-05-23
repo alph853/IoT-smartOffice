@@ -3,21 +3,16 @@ package com.example.iot
 import android.os.Bundle
 import android.view.View
 import android.widget.FrameLayout
-import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
-import androidx.fragment.app.Fragment
 import com.example.iot.fragments.*
 import android.widget.ImageButton
 import android.widget.PopupMenu
-import android.widget.GridLayout
-import android.util.TypedValue
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import android.content.Intent
@@ -148,7 +143,7 @@ class MainActivity : AppCompatActivity() {
             val fragment = when(index) {
                 1 -> ControlFragment.newInstance()
                 2 -> CameraFragment.newInstance()
-                3 -> NotificationFragment.newInstance() 
+                3 -> NotificationFragment.newInstance()
                 4 -> SettingFragment.newInstance()
                 else -> ControlFragment.newInstance()
             }
