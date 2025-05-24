@@ -23,31 +23,54 @@ class DeviceService:
     async def stop(self):
         logger.info("Device service stopped")
 
-    async def get_devices(self) -> List[Device]:
-        return await self.device_repo.get_devices()
+    async def get_devices(self, return_components: bool = False) -> List[Device]:
+        devices = await self.device_repo.get_devices()
+        if return_components:
+            for device in devices:
+                device.sensors = await self.device_repo.get_sensors_by_device_id(device.id)
+                device.actuators = await self.device_repo.get_actuators_by_device_id(device.id)
+        return devices
 
-    async def get_device_by_id(self, device_id: int) -> Device:
-        return await self.device_repo.get_device_by_id(device_id)
+    async def get_device_by_id(self, device_id: int, return_components: bool = False) -> Device:
+        device = await self.device_repo.get_device_by_id(device_id)
+        if device and return_components:
+            device.sensors = await self.device_repo.get_sensors_by_device_id(device.id)
+            device.actuators = await self.device_repo.get_actuators_by_device_id(device.id)
+        return device
 
-    async def connect_device(self, device_registration: DeviceRegistration) -> Device:
+    async def connect_device(self, device_registration: DeviceRegistration, return_components: bool = True) -> Device:
         """Create or update a device and connect it to the cloud"""
         device = await self.device_repo.get_device_by_mac_addr(device_registration.mac_addr)
         if device:
             device_update = DeviceUpdate(**device_registration.model_dump())
             device_update.status = DeviceStatus.ONLINE
             device_update.last_seen_at = datetime.now()
-            device = await self.update_device(device.id, device_update)
+            device = await self.update_device(device.id, device_update, return_components)
         else:
-            device = await self.create_device(device_registration)
+            device = await self.create_device(device_registration, return_components)
+
+        # Get sensors and actuators if requested
+        if return_components:
+            device.sensors = await self.device_repo.get_sensors_by_device_id(device.id)
+            device.actuators = await self.device_repo.get_actuators_by_device_id(device.id)
+
         self.event_bus.publish(DeviceConnectedEvent(device=device))
         return device
 
-    async def create_device(self, device_registration: DeviceRegistration) -> Device:
+    async def create_device(self, device_registration: DeviceRegistration, return_components: bool = False) -> Device:
         """Only used for testing at server side. Device registration is done via MQTT client."""
-        return await self.device_repo.create_device(device_registration)
+        device = await self.device_repo.create_device(device_registration)
+        if return_components:
+            device.sensors = await self.device_repo.get_sensors_by_device_id(device.id)
+            device.actuators = await self.device_repo.get_actuators_by_device_id(device.id)
+        return device
 
-    async def update_device(self, device_id: int, device_update: DeviceUpdate) -> Device | None:
-        return await self.device_repo.update_device(device_id, device_update)
+    async def update_device(self, device_id: int, device_update: DeviceUpdate, return_components: bool = False) -> Device | None:
+        device = await self.device_repo.update_device(device_id, device_update)
+        if device and return_components:
+            device.sensors = await self.device_repo.get_sensors_by_device_id(device.id)
+            device.actuators = await self.device_repo.get_actuators_by_device_id(device.id)
+        return device
 
     async def delete_all_devices(self) -> bool:
         success = True

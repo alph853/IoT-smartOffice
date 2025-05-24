@@ -165,6 +165,18 @@ class PostgresDeviceRepository(DeviceRepository):
     async def get_sensor_reading(self, id: int) -> SensorReading:
         pass
 
+    async def get_sensors_by_device_id(self, device_id: int) -> List[Sensor]:
+        async with self.db.acquire() as conn:
+            query = GET_SENSORS_BY_DEVICE_ID
+            result = await conn.fetch(query, device_id)
+            return [Sensor(**row) for row in result]
+
+    async def get_actuators_by_device_id(self, device_id: int) -> List[Actuator]:
+        async with self.db.acquire() as conn:
+            query = GET_ACTUATORS_BY_DEVICE_ID
+            result = await conn.fetch(query, device_id)
+            return [Actuator(**row) for row in result]
+
     # -----------------------------------------------------------------------
     # ------------------------------ Helpers --------------------------------
     # -----------------------------------------------------------------------

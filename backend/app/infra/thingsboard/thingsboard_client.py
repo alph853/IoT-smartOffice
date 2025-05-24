@@ -1,14 +1,13 @@
 import json
 import asyncio
-from typing import Dict, Any, Optional
-from tb_gateway_mqtt import TBGatewayMqttClient
 import websockets
+from typing import Dict, Any, Tuple
 from loguru import logger
 from websockets.client import ClientConnection
 
 from app.domain.events import EventBusInterface
 from app.domain.repositories import MqttCloudClientRepository, HttpClientRepository
-from app.domain.models import RPCResponse, DeviceUpdate, ActuatorUpdate
+from app.domain.models import RPCResponse, DeviceUpdate, ActuatorUpdate, LightingSet, FanStateSet, COLOR_MAP
 
 
 class ThingsboardClient(MqttCloudClientRepository):
@@ -94,6 +93,20 @@ class ThingsboardClient(MqttCloudClientRepository):
         logger.info(f"Sending RPC command: {request}")
         url = self._rpc_api
         resp = await self.http_client.request(url, payload=request, method="POST", headers=self.headers)
+        return RPCResponse(**resp)
+
+    async def set_lighting(self, lighting_set: LightingSet) -> RPCResponse:
+        logger.info(f"Setting lighting: {lighting_set}")
+        if type(lighting_set.color) == str:
+            lighting_set.color = COLOR_MAP[lighting_set.color.value]
+        url = self._rpc_api
+        resp = await self.http_client.request(url, payload=lighting_set.model_dump(), method="POST", headers=self.headers)
+        return RPCResponse(**resp)
+
+    async def set_fan_state(self, fan_state_set: FanStateSet) -> RPCResponse:
+        logger.info(f"Setting fan state: {fan_state_set}")
+        url = self._rpc_api
+        resp = await self.http_client.request(url, payload=fan_state_set.model_dump(), method="POST", headers=self.headers)
         return RPCResponse(**resp)
 
     async def delete_device(self, device_id: int) -> RPCResponse:

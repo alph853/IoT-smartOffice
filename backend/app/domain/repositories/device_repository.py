@@ -64,3 +64,10 @@ class DeviceRepository(ABC):
     async def create_sensor_reading(self, sensor_reading: SensorReading) -> SensorReading:
         pass
 
+    @abstractmethod
+    async def get_sensors_by_device_id(self, device_id: int) -> List[Sensor]:
+        pass
+
+    @abstractmethod
+    async def get_actuators_by_device_id(self, device_id: int) -> List[Actuator]:
+        pass
