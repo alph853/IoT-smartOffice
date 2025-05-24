@@ -1,0 +1,25 @@
+{
+    "postgres": {
+        "host": "localhost",
+        "port": 5432,
+        "user": "postgres",
+        "password": "TTD04110412",
+        "database": "smart_office"
+    },
+    "thingsboard": {
+        "url": "app.coreiot.io",
+        "port": 1883,
+        "client_id": "",
+        "username": "trung.do853@hcmut.edu.vn",
+        "password": "12345678",
+        "device_id": "f5883950-2739-11f0-a3c9-ab0d8999f561",
+        "device_name": "IoT Gateway",
+        "api": {
+            "ws_url": "wss://app.coreiot.io/api/ws/plugins/telemetry?token=",
+            "login_url": "https://app.coreiot.io/api/auth/login",
+            "telemetry": "/api/plugins/telemetry/DEVICE/{device_id}/values/timeseries",
+            "shared_attributes": "/api/plugins/telemetry/DEVICE/{device_id}/value/attributes/CLIENT_SCOPE",
+            "rpc": "/api/plugins/rpc/twoway/{device_id}"
+        }
+    }
+}
