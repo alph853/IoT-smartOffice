@@ -1,6 +1,7 @@
 package com.example.iot
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.TextView
@@ -16,6 +17,11 @@ import android.widget.PopupMenu
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import android.content.Intent
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import java.io.InputStreamReader
+import java.net.URL
+import javax.net.ssl.HttpsURLConnection
 
 class MainActivity : AppCompatActivity() {
 
@@ -31,6 +37,9 @@ class MainActivity : AppCompatActivity() {
         supportActionBar?.hide()
         setContentView(R.layout.activity_main)
 
+        fetchRoomData().start()
+        Log.d("onCreate", "Started fetchRoomData")
+
         // Apply window insets properly
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -38,25 +47,25 @@ class MainActivity : AppCompatActivity() {
             v.updatePadding(left = systemBars.left, right = systemBars.right)
             insets
         }
-        
+
         // Get references to home screen and fragment container
         homeScreen = findViewById(R.id.home_screen)
         fragmentContainer = findViewById(R.id.fragment_container) ?: FrameLayout(this)
         tvActiveCount = findViewById(R.id.tv_active_count)
-        
+
         // Setup navigation bar
         navigationBar = NavigationBar(this)
         navigationBar.setup()
         navigationBar.setOnItemSelectedListener { index ->
             showContent(index)
         }
-        
+
         // Ensure Home UI is visible at startup
         homeScreen.visibility = View.VISIBLE
-        
+
         // Get selected tab from intent (if any)
         val selectedTab = intent.getIntExtra("selected_tab", 0)
-        
+
         // Select the appropriate tab
         navigationBar.setSelectedIndex(selectedTab)
         showContent(selectedTab)
@@ -112,6 +121,86 @@ class MainActivity : AppCompatActivity() {
         updateActiveCount()
     }
 
+    private fun fetchRoomData(): Thread {
+        return Thread {
+            try {
+                val url = URL("https://10diemiot.ngrok.io/office/?return_components=true")
+                val conn = url.openConnection() as HttpsURLConnection
+
+                if(conn.responseCode == 200) {
+                    val inputStream = conn.inputStream
+                    val reader = InputStreamReader(inputStream)
+                    val json = reader.readText()
+                    Log.d("fetchRoomData", json)
+
+                    // Parse JSON and create Room objects
+                    val gson = Gson()
+                    val roomListType = object : TypeToken<List<Room>>() {}.type
+                    val rooms: List<Room> = gson.fromJson(json, roomListType)
+
+                    // Clear existing rooms and add new ones
+                    runOnUiThread {
+                        RoomManager.getRooms().clear()
+                        SensorManager.getSensors().clear()
+                        ActuatorManager.getActuators().clear()
+
+                        rooms.forEach { room ->
+                            RoomManager.addRoom(room)
+                            Log.d("fetchRoomData", "Added room: ${room.name} (ID: ${room.id}, Building: ${room.building}, Room: ${room.room})")
+                            Log.d("fetchRoomData", "  - Devices: ${room.devices.size}")
+
+                            // Log device details
+                            room.devices.forEach { device ->
+                                // Set location programmatically using format: O{office_id}-{building}-{room}
+                                device.location = "O${device.office_id}-${room.building}-${room.room}"
+                                
+                                Log.d("fetchRoomData", "    Device: ${device.name} (ID: ${device.id}, Status: ${device.status}, Location: ${device.location})")
+                                Log.d("fetchRoomData", "      - Sensors: ${device.sensors.size}, Actuators: ${device.actuators.size}")
+
+                                // Add sensors to SensorManager
+                                device.sensors.forEach { sensor ->
+                                    SensorManager.addSensor(sensor)
+                                    Log.d("fetchRoomData", "        Sensor: ${sensor.name} (${sensor.type})")
+                                }
+
+                                // Add actuators to ActuatorManager
+                                device.actuators.forEach { actuator ->
+                                    ActuatorManager.addActuator(actuator)
+                                    Log.d("fetchRoomData", "        Actuator: ${actuator.name} (${actuator.type})")
+                                }
+                            }
+                        }
+                        Log.d("fetchRoomData", "Total rooms loaded: ${RoomManager.getRoomCount()}")
+                        Log.d("fetchRoomData", "Total sensors loaded: ${SensorManager.getSensorCount()}")
+                        Log.d("fetchRoomData", "Total actuators loaded: ${ActuatorManager.getActuatorCount()}")
+                    }
+
+                    reader.close()
+                    inputStream.close()
+                    updateUI()
+                }
+                else {
+                    runOnUiThread {
+                        tvActiveCount.text = "Connection error"
+                        Log.e("fetchRoomData", "HTTP Error: ${conn.responseCode}")
+                    }
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    tvActiveCount.text = "Network error"
+                    Log.e("fetchRoomData", "Exception: ${e.message}", e)
+                }
+            }
+        }
+    }
+
+    private fun updateUI() {
+        runOnUiThread {
+            roomAdapter.notifyDataSetChanged()
+            updateActiveCount()
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         // Refresh the room list
@@ -121,15 +210,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun onRoomCardClicked(room: Room) {
         // Launch the RoomDetailActivity with room information and index
-        val roomIndex = RoomManager.getRooms().indexOf(room)
-        val intent = RoomDetailActivity.newIntent(this, room, roomIndex)
+        val intent = RoomDetailActivity.newIntent(this, room, room.id)
         startActivity(intent)
     }
 
     private fun updateActiveCount() {
         tvActiveCount.text = "${RoomManager.getRoomCount()} active(s)"
     }
-    
+
     private fun showContent(index: Int) {
         if (index == 0) {
             // Show Home screen with header
@@ -139,7 +227,7 @@ class MainActivity : AppCompatActivity() {
             // Show other fragments
             homeScreen.visibility = View.GONE
             fragmentContainer.visibility = View.VISIBLE
-            
+
             val fragment = when(index) {
                 1 -> ControlFragment.newInstance()
                 2 -> CameraFragment.newInstance()
@@ -147,7 +235,7 @@ class MainActivity : AppCompatActivity() {
                 4 -> SettingFragment.newInstance()
                 else -> ControlFragment.newInstance()
             }
-            
+
             // Replace the fragment
             supportFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, fragment)
@@ -171,12 +259,12 @@ class MainActivity : AppCompatActivity() {
         // Toggle modify mode in the adapter
         roomAdapter.setModifyMode(!roomAdapter.isModifyMode())
     }
-    
+
     // Handle when this activity resumes (e.g., when returning from other activities)
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        
+
         // If coming back via HOME tab (no specific tab selected in intent)
         if (!intent.hasExtra("selected_tab")) {
             // Ensure we're showing the home screen and the home tab is selected

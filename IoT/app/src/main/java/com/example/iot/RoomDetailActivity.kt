@@ -21,18 +21,18 @@ class RoomDetailActivity : AppCompatActivity() {
     private lateinit var navigationBar: NavigationBar
     private lateinit var mcuAdapter: MCUAdapter
     private lateinit var tvActiveCount: TextView
-    private lateinit var currentRoom: Room
+    private var currentRoom: Room? = null
 
     companion object {
         private const val EXTRA_ROOM_NAME = "extra_room_name"
         private const val EXTRA_ROOM_DESC = "extra_room_desc"
-        private const val EXTRA_ROOM_INDEX = "extra_room_index"
+        private const val EXTRA_ROOM_ID = "extra_room_id"
 
-        fun newIntent(context: Context, room: Room, roomIndex: Int): Intent {
+        fun newIntent(context: Context, room: Room, roomID: Int): Intent {
             return Intent(context, RoomDetailActivity::class.java).apply {
                 putExtra(EXTRA_ROOM_NAME, room.name)
                 putExtra(EXTRA_ROOM_DESC, room.description)
-                putExtra(EXTRA_ROOM_INDEX, roomIndex)
+                putExtra(EXTRA_ROOM_ID, roomID)
             }
         }
     }
@@ -44,14 +44,18 @@ class RoomDetailActivity : AppCompatActivity() {
         setContentView(R.layout.activity_room_detail)
 
         // Get room index from intent
-        val roomIndex = intent.getIntExtra(EXTRA_ROOM_INDEX, -1)
-        if (roomIndex == -1) {
+        val roomID = intent.getIntExtra(EXTRA_ROOM_ID, -1)
+        if (roomID == -1) {
             finish()
             return
         }
 
         // Get the current room
-        currentRoom = RoomManager.getRooms()[roomIndex]
+        currentRoom = RoomManager.getRoomByID(roomID)
+        if (currentRoom == null) {
+            finish()
+            return
+        }
 
         // Apply window insets properly
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.detail_main)) { v, insets ->
@@ -63,7 +67,7 @@ class RoomDetailActivity : AppCompatActivity() {
 
         // Setup views
         tvActiveCount = findViewById(R.id.tv_active_count)
-        findViewById<TextView>(R.id.tvDetailRoomName).text = currentRoom.name
+        findViewById<TextView>(R.id.tvDetailRoomName).text = currentRoom?.name ?: "Unknown Room"
 
         setupUI()
     }
@@ -73,7 +77,7 @@ class RoomDetailActivity : AppCompatActivity() {
         findViewById<View>(R.id.backButton).setOnClickListener {
             finish()
         }
-        
+
         // Setup menu button event
         val btnMenu = findViewById<ImageButton>(R.id.btn_menu)
         btnMenu.setOnClickListener { v ->
@@ -100,69 +104,82 @@ class RoomDetailActivity : AppCompatActivity() {
             }
             popup.show()
         }
-        
+
         // Setup RecyclerView for MCU cards
         val rvMCUs = findViewById<RecyclerView>(R.id.rvMCUs)
-        mcuAdapter = MCUAdapter(
-            currentRoom,
-            { updateActiveCount() },
-            { mcu -> onMCUCardClicked(mcu) }
-        )
-        rvMCUs.layoutManager = GridLayoutManager(this, 2)
-        rvMCUs.adapter = mcuAdapter
-        
+        currentRoom?.let { room ->
+            mcuAdapter = MCUAdapter(
+                room,
+                { updateActiveCount() },
+                { mcu -> onMCUCardClicked(mcu) }
+            )
+            rvMCUs.layoutManager = GridLayoutManager(this, 2)
+            rvMCUs.adapter = mcuAdapter
+        }
+
         // Add click listener to root layout to hide remove button
         findViewById<View>(R.id.detail_main).setOnClickListener {
-            if (mcuAdapter.isRemoveMode()) {
-                mcuAdapter.setRemoveMode(false)
-            }
-            if (mcuAdapter.isModifyMode()) {
-                mcuAdapter.setModifyMode(false)
+            if (::mcuAdapter.isInitialized) {
+                if (mcuAdapter.isRemoveMode()) {
+                    mcuAdapter.setRemoveMode(false)
+                }
+                if (mcuAdapter.isModifyMode()) {
+                    mcuAdapter.setModifyMode(false)
+                }
             }
         }
-        
+
         // Update active count initially
         updateActiveCount()
-        
+
         // Setup navigation bar
         setupNavigationBar()
     }
-
     override fun onResume() {
         super.onResume()
         // Refresh the adapter to show any updates
-        mcuAdapter.notifyDataSetChanged()
+        if (::mcuAdapter.isInitialized) {
+            mcuAdapter.notifyDataSetChanged()
+        }
         updateActiveCount()
     }
 
     private fun updateActiveCount() {
-        tvActiveCount.text = "${currentRoom.deviceCount} MCU(s)"
+        tvActiveCount.text = "${currentRoom?.deviceCount ?: 0} MCU(s)"
     }
     
     private fun onMCUCardClicked(mcu: MCU) {
         // Get the room index
-        val roomIndex = RoomManager.getRooms().indexOf(currentRoom)
+        val roomID = currentRoom?.id ?: return
         // Navigate to MCU detail screen
-        val intent = MCUDetailActivity.newIntent(this, mcu, roomIndex)
+        val intent = MCUDetailActivity.newIntent(this, mcu, roomID)
         startActivity(intent)
     }
-    
+
     private fun onMenuAdd() {
-        // Create a new MCU with default values
-        val newMCU = MCU()
-        currentRoom.addMCU(newMCU)
-        mcuAdapter.notifyItemInserted(currentRoom.deviceCount - 1)
-        updateActiveCount()
+        currentRoom?.let { room ->
+            // Create a new MCU with default values
+            val newMCU = MCU()
+            room.addMCU(newMCU)
+            if (::mcuAdapter.isInitialized) {
+                mcuAdapter.notifyItemInserted(room.deviceCount - 1)
+            }
+            updateActiveCount()
+        }
     }
 
     private fun onMenuRemove() {
         // Toggle remove mode in the adapter
-        mcuAdapter.setRemoveMode(!mcuAdapter.isRemoveMode())
+        if (::mcuAdapter.isInitialized) {
+            mcuAdapter.setRemoveMode(!mcuAdapter.isRemoveMode())
+        }
     }
 
     private fun onMenuModify() {
         // Toggle modify mode in the adapter
-        mcuAdapter.setModifyMode(!mcuAdapter.isModifyMode())
+        if (::mcuAdapter.isInitialized) {
+            mcuAdapter.setModifyMode(!mcuAdapter.isModifyMode())
+        }
     }
     
     private fun setupNavigationBar() {

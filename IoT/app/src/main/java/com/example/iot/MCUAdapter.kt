@@ -116,12 +116,14 @@ class MCUAdapter(
         holder.cardView.layoutParams = params
 
         // Set LinearLayout paddingTop proportionally to card width (20/190 ratio)
+        val paddingStart = (cardEdge * 20 / 190).toInt()
+        val paddingEnd = (cardEdge * 20 / 190).toInt()
         val paddingTop = (cardEdge * 20 / 190).toInt()
         val paddingBot = (cardEdge * 14 / 190).toInt()
         holder.linearLayout.setPadding(
-            0,
+            paddingStart,
             paddingTop,
-            0,
+            paddingEnd,
             paddingBot
         )
 
@@ -150,20 +152,20 @@ class MCUAdapter(
         deviceParams.topMargin = deviceMarginTop
         holder.tvMCUDesc.layoutParams = deviceParams
         
-        // Set LinearLayout for mode/status marginTop proportionally to card width (12/190 ratio)
-        val statusLinearLayoutMarginTop = (cardEdge * 12 / 190).toInt()
-        val statusLinearParams = holder.statusLinearLayout.layoutParams as MarginLayoutParams
-        statusLinearParams.topMargin = statusLinearLayoutMarginTop
-        holder.statusLinearLayout.layoutParams = statusLinearParams
+//        // Set LinearLayout for mode/status marginTop proportionally to card width (12/190 ratio)
+//        val statusLinearLayoutMarginBottom = 0
+//        val statusLinearParams = holder.statusLinearLayout.layoutParams as MarginLayoutParams
+//        statusLinearParams.bottomMargin = statusLinearLayoutMarginBottom
+//        holder.statusLinearLayout.layoutParams = statusLinearParams
 
-        // Set LinearLayout paddingTop proportionally to card width (20/190 ratio)
-        val paddingStartEnd = (cardEdge * 20 / 190).toInt()
-        holder.statusLinearLayout.setPadding(
-            paddingStartEnd,
-            0,
-            paddingStartEnd,
-            0
-        )
+//        // Set LinearLayout paddingTop proportionally to card width (20/190 ratio)
+//        val paddingStartEnd = (cardEdge * 20 / 190).toInt()
+//        holder.statusLinearLayout.setPadding(
+//            paddingStartEnd,
+//            0,
+//            paddingStartEnd,
+//            0
+//        )
 
     }
 

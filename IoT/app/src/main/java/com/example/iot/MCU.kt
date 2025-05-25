@@ -7,15 +7,40 @@ data class Component(
 )
 
 data class MCU(
-    var name: String = "New MCU",
-    var description: String = "New Device",
-    var status: String = "Online",
-    var location: String = "Not set",
-    var registerAt: String = "Not registered",
-    var macAddress: String = "Not set",
-    var firmwareVersion: String = "1.0.0",
-    var lastSeenAs: String = "Never",
-    var model: String = "Default Model",
-    val id: String = java.util.UUID.randomUUID().toString(),
-    var components: MutableList<Component> = mutableListOf()
-) 
+    var id: Int,
+    var name: String,
+    var registered_at: String,
+    var mac_addr: String,
+    var description: String,
+    var location: String,
+    var fw_version: String,
+    var last_seen_at: String,
+    var model: String,
+    var office_id: Int,
+    var gateway_id: Int,
+    var status: String,
+    var access_token: String?,
+    var sensors: MutableList<Sensor> = mutableListOf(),
+    var actuators: MutableList<Actuator> = mutableListOf(),
+    var components: MutableList<Component> = mutableListOf() // Keep for backward compatibility
+) {
+    // Secondary constructor for backward compatibility
+    constructor() : this(
+        id = 0,
+        name = "New MCU",
+        registered_at = "Not registered",
+        mac_addr = "Not set",
+        description = "New Device",
+        location = "Unknown",
+        fw_version = "1.0.0",
+        last_seen_at = "Never",
+        model = "Default Model",
+        office_id = 0,
+        gateway_id = 0,
+        status = "Online",
+        access_token = null,
+        sensors = mutableListOf(),
+        actuators = mutableListOf(),
+        components = mutableListOf()
+    )
+}

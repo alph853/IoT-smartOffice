@@ -1,31 +1,44 @@
 package com.example.iot
 
 data class Room(
-    var name: String = "Room",
-    var description: String = "Building",
-    private val mcuList: MutableList<MCU> = mutableListOf()
+    var id: Int,
+    var room: String,
+    var building: String,
+    var description: String,
+    var name: String,
+    var devices: MutableList<MCU> = mutableListOf()
 ) {
+    // Secondary constructor for backward compatibility
+    constructor() : this(
+        id = 0,
+        room = "Unknown",
+        building = "Unknown",
+        description = "No description",
+        name = "New Room",
+        devices = mutableListOf()
+    )
+
     val deviceCount: Int
-        get() = mcuList.size
+        get() = devices.size
 
     fun addMCU(mcu: MCU) {
-        mcuList.add(mcu)
+        devices.add(mcu)
     }
 
     fun removeMCU(mcu: MCU) {
-        mcuList.remove(mcu)
+        devices.remove(mcu)
     }
 
     fun updateMCU(oldMCU: MCU, updatedMCU: MCU) {
-        val index = mcuList.indexOfFirst { it.id == oldMCU.id }
+        val index = devices.indexOfFirst { it.id == oldMCU.id }
         if (index != -1) {
-            mcuList[index] = updatedMCU.copy(id = oldMCU.id)
+            devices[index] = updatedMCU.copy(id = oldMCU.id)
         }
     }
 
-    fun getMCUs(): List<MCU> = mcuList.toList()
+    fun getMCUs(): List<MCU> = devices.toList()
 
     fun clearMCUs() {
-        mcuList.clear()
+        devices.clear()
     }
-} 
+}

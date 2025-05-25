@@ -24,21 +24,21 @@ class MCUDetailActivity : AppCompatActivity() {
     private lateinit var mcu: MCU
     private lateinit var originalMCU: MCU
     private lateinit var currentRoom: Room
-    private lateinit var componentAdapter: ComponentAdapter
+    private lateinit var sensorAdapter: SensorAdapter
+    private lateinit var actuatorAdapter: ActuatorAdapter
 
     companion object {
         private const val EXTRA_MCU_ID = "extra_mcu_id"
         private const val EXTRA_MCU_NAME = "extra_mcu_name"
         private const val EXTRA_MCU_STATUS = "extra_mcu_status"
         private const val EXTRA_MCU_DESCRIPTION = "extra_mcu_description"
-        private const val EXTRA_MCU_MODE = "extra_mcu_mode"
         private const val EXTRA_MCU_LOCATION = "extra_mcu_location"
         private const val EXTRA_MCU_REGISTER_AT = "extra_mcu_register_at"
         private const val EXTRA_MCU_MAC_ADDRESS = "extra_mcu_mac_address"
         private const val EXTRA_MCU_FIRMWARE_VERSION = "extra_mcu_firmware_version"
         private const val EXTRA_MCU_LAST_SEEN_AS = "extra_mcu_last_seen_as"
         private const val EXTRA_MCU_MODEL = "extra_mcu_model"
-        private const val EXTRA_ROOM_INDEX = "extra_room_index"
+        private const val EXTRA_ROOM_ID = "extra_room_id"
 
         // Static callback field to handle MCU updates
         private var onMCUUpdateListener: ((MCU) -> Unit)? = null
@@ -53,19 +53,19 @@ class MCUDetailActivity : AppCompatActivity() {
             onMCUUpdateListener = null
         }
 
-        fun newIntent(context: Context, mcu: MCU, roomIndex: Int): Intent {
+        fun newIntent(context: Context, mcu: MCU, roomID: Int): Intent {
             return Intent(context, MCUDetailActivity::class.java).apply {
                 putExtra(EXTRA_MCU_ID, mcu.id)
                 putExtra(EXTRA_MCU_NAME, mcu.name)
                 putExtra(EXTRA_MCU_STATUS, mcu.status)
                 putExtra(EXTRA_MCU_DESCRIPTION, mcu.description)
                 putExtra(EXTRA_MCU_LOCATION, mcu.location)
-                putExtra(EXTRA_MCU_REGISTER_AT, mcu.registerAt)
-                putExtra(EXTRA_MCU_MAC_ADDRESS, mcu.macAddress)
-                putExtra(EXTRA_MCU_FIRMWARE_VERSION, mcu.firmwareVersion)
-                putExtra(EXTRA_MCU_LAST_SEEN_AS, mcu.lastSeenAs)
+                putExtra(EXTRA_MCU_REGISTER_AT, mcu.registered_at)
+                putExtra(EXTRA_MCU_MAC_ADDRESS, mcu.mac_addr)
+                putExtra(EXTRA_MCU_FIRMWARE_VERSION, mcu.fw_version)
+                putExtra(EXTRA_MCU_LAST_SEEN_AS, mcu.last_seen_at)
                 putExtra(EXTRA_MCU_MODEL, mcu.model)
-                putExtra(EXTRA_ROOM_INDEX, roomIndex)
+                putExtra(EXTRA_ROOM_ID, roomID)
             }
         }
     }
@@ -84,42 +84,33 @@ class MCUDetailActivity : AppCompatActivity() {
         }
 
         // Get room index from intent
-        val roomIndex = intent.getIntExtra(EXTRA_ROOM_INDEX, -1)
-        if (roomIndex == -1) {
+        val roomID = intent.getIntExtra(EXTRA_ROOM_ID, -1)
+        if (roomID == -1) {
             finish()
             return
         }
 
         // Get the current room
-        currentRoom = RoomManager.getRooms()[roomIndex]
+        currentRoom = RoomManager.getRoomByID(roomID) ?: run {
+            finish()
+            return
+        }
 
         // Get MCU ID from intent
-        val mcuId = intent.getStringExtra(EXTRA_MCU_ID)
-        
+        val mcuId = intent.getIntExtra(EXTRA_MCU_ID, -1)
+
         // Try to get the existing MCU from the room using ID
-        val existingMCU = if (mcuId != null) {
+        val existingMCU = if (mcuId != -1) {
             currentRoom.getMCUs().find { it.id == mcuId }
         } else null
-        
+
         if (existingMCU != null) {
             // Use the existing MCU if found
             mcu = existingMCU.copy()
             originalMCU = existingMCU
         } else {
-            // Create new MCU with values from intent and preserve the ID if it exists
-            mcu = MCU(
-                id = mcuId ?: java.util.UUID.randomUUID().toString(),
-                name = intent.getStringExtra(EXTRA_MCU_NAME) ?: "New MCU",
-                status = intent.getStringExtra(EXTRA_MCU_STATUS) ?: "Offline",
-                description = intent.getStringExtra(EXTRA_MCU_DESCRIPTION) ?: "New Device",
-                location = intent.getStringExtra(EXTRA_MCU_LOCATION) ?: "Not set",
-                registerAt = intent.getStringExtra(EXTRA_MCU_REGISTER_AT) ?: "Not registered",
-                macAddress = intent.getStringExtra(EXTRA_MCU_MAC_ADDRESS) ?: "Not set",
-                firmwareVersion = intent.getStringExtra(EXTRA_MCU_FIRMWARE_VERSION) ?: "1.0.0",
-                lastSeenAs = intent.getStringExtra(EXTRA_MCU_LAST_SEEN_AS) ?: "Never",
-                model = intent.getStringExtra(EXTRA_MCU_MODEL) ?: "Default Model"
-            )
-            currentRoom.addMCU(mcu)
+            // Create a new MCU if not found
+            mcu = MCU()
             originalMCU = mcu.copy()
         }
 
@@ -140,8 +131,8 @@ class MCUDetailActivity : AppCompatActivity() {
         // Display MCU information
         displayMCUInfo()
 
-        // Setup component RecyclerView and menu
-        setupComponentSection()
+        // Setup sensor and actuator RecyclerViews
+        setupSensorAndActuatorSections()
     }
 
     private fun setupClickableItems() {
@@ -173,32 +164,32 @@ class MCUDetailActivity : AppCompatActivity() {
 
         // Technical Info section
         findViewById<View>(R.id.registerAtLayout).setOnClickListener {
-            showEditDialog("Register at", mcu.registerAt) { newValue ->
-                mcu.registerAt = newValue
+            showEditDialog("Register at", mcu.registered_at) { newValue ->
+                mcu.registered_at = newValue
                 findViewById<TextView>(R.id.tvRegisterAt).text = newValue
                 saveMCUChanges()
             }
         }
 
         findViewById<View>(R.id.macAddressLayout).setOnClickListener {
-            showEditDialog("Mac address", mcu.macAddress) { newValue ->
-                mcu.macAddress = newValue
+            showEditDialog("Mac address", mcu.mac_addr) { newValue ->
+                mcu.mac_addr = newValue
                 findViewById<TextView>(R.id.tvMacAddress).text = newValue
                 saveMCUChanges()
             }
         }
 
         findViewById<View>(R.id.firmwareVersionLayout).setOnClickListener {
-            showEditDialog("Firmware version", mcu.firmwareVersion) { newValue ->
-                mcu.firmwareVersion = newValue
+            showEditDialog("Firmware version", mcu.fw_version) { newValue ->
+                mcu.fw_version = newValue
                 findViewById<TextView>(R.id.tvFirmwareVersion).text = newValue
                 saveMCUChanges()
             }
         }
 
         findViewById<View>(R.id.lastSeenLayout).setOnClickListener {
-            showEditDialog("Last seen as", mcu.lastSeenAs) { newValue ->
-                mcu.lastSeenAs = newValue
+            showEditDialog("Last seen at", mcu.last_seen_at) { newValue ->
+                mcu.last_seen_at = newValue
                 findViewById<TextView>(R.id.tvLastSeenAs).text = newValue
                 saveMCUChanges()
             }
@@ -217,21 +208,21 @@ class MCUDetailActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tvName).text = mcu.name
         findViewById<TextView>(R.id.tvDescription).text = mcu.description
         findViewById<TextView>(R.id.tvLocation).text = mcu.location
-        findViewById<TextView>(R.id.tvRegisterAt).text = mcu.registerAt
-        findViewById<TextView>(R.id.tvMacAddress).text = mcu.macAddress
-        findViewById<TextView>(R.id.tvFirmwareVersion).text = mcu.firmwareVersion
-        findViewById<TextView>(R.id.tvLastSeenAs).text = mcu.lastSeenAs
+        findViewById<TextView>(R.id.tvRegisterAt).text = mcu.registered_at
+        findViewById<TextView>(R.id.tvMacAddress).text = mcu.mac_addr
+        findViewById<TextView>(R.id.tvFirmwareVersion).text = mcu.fw_version
+        findViewById<TextView>(R.id.tvLastSeenAs).text = mcu.last_seen_at
         findViewById<TextView>(R.id.tvModel).text = mcu.model
     }
 
     private fun showEditDialog(title: String, currentValue: String, onConfirm: (String) -> Unit) {
         val dialog = AlertDialog.Builder(this, R.style.CustomAlertDialog)
             .create()
-        
+
         val dialogView = layoutInflater.inflate(R.layout.dialog_edit, null)
         val editText = dialogView.findViewById<EditText>(R.id.editText)
         editText.setText(currentValue)
-        
+
         // Set up confirm button
         dialogView.findViewById<Button>(R.id.btnConfirm).setOnClickListener {
             val newValue = editText.text.toString()
@@ -240,7 +231,7 @@ class MCUDetailActivity : AppCompatActivity() {
             }
             dialog.dismiss()
         }
-        
+
         // Set up cancel button
         dialogView.findViewById<Button>(R.id.btnCancel).setOnClickListener {
             dialog.dismiss()
@@ -259,10 +250,10 @@ class MCUDetailActivity : AppCompatActivity() {
     private fun setupNavigationBar() {
         navigationBar = NavigationBar(this)
         navigationBar.setup()
-        
+
         // Set the Home tab as selected (index 0) since MCU details belong to Home functionality
         navigationBar.setSelectedIndex(0)
-        
+
         // Handle navigation item clicks
         navigationBar.setOnItemSelectedListener { index ->
             if (index == 0) {
@@ -281,41 +272,18 @@ class MCUDetailActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupComponentSection() {
-        val rvComponents = findViewById<RecyclerView>(R.id.rvComponents)
-        componentAdapter = ComponentAdapter(mcu.components, this) {
-            saveMCUChanges()
-        }
-        rvComponents.layoutManager = LinearLayoutManager(this)
-        rvComponents.adapter = componentAdapter
+    private fun setupSensorAndActuatorSections() {
+        // Setup Sensors RecyclerView
+        val rvSensors = findViewById<RecyclerView>(R.id.rvSensors)
+        sensorAdapter = SensorAdapter(mcu.sensors)
+        rvSensors.layoutManager = LinearLayoutManager(this)
+        rvSensors.adapter = sensorAdapter
 
-        val btnMenu = findViewById<ImageButton>(R.id.btnComponentMenu)
-        btnMenu.setOnClickListener { v ->
-            val popup = PopupMenu(this, v)
-            popup.menu.add(0, 0, 0, "Add")
-            popup.menu.add(0, 1, 1, "Remove")
-            popup.menu.add(0, 2, 2, "Modify")
-            popup.setOnMenuItemClickListener { item ->
-                when (item.itemId) {
-                    0 -> { // Add
-                        mcu.components.add(Component())
-                        componentAdapter.notifyItemInserted(mcu.components.size - 1)
-                        saveMCUChanges()
-                        true
-                    }
-                    1 -> { // Remove
-                        componentAdapter.setRemoveMode(!componentAdapter.isRemoveMode())
-                        true
-                    }
-                    2 -> { // Modify
-                        componentAdapter.setModifyMode(!componentAdapter.isModifyMode())
-                        true
-                    }
-                    else -> false
-                }
-            }
-            popup.show()
-        }
+        // Setup Actuators RecyclerView
+        val rvActuators = findViewById<RecyclerView>(R.id.rvActuators)
+        actuatorAdapter = ActuatorAdapter(mcu.actuators)
+        rvActuators.layoutManager = LinearLayoutManager(this)
+        rvActuators.adapter = actuatorAdapter
     }
 
     override fun onDestroy() {

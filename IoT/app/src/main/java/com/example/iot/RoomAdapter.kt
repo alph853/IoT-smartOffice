@@ -46,7 +46,7 @@ class RoomAdapter(
     override fun onBindViewHolder(holder: RoomViewHolder, position: Int) {
         val room = rooms[position]
         holder.tvRoomName.text = room.name
-        holder.tvRoomDesc.text = room.description
+        holder.tvRoomBuilding.text = room.building
         holder.tvDeviceCount.text = "${room.deviceCount} active device(s)"
 
         // Show/hide remove icon based on remove mode
@@ -77,12 +77,12 @@ class RoomAdapter(
             holder.tvRoomName.setOnClickListener {
                 showEditDialog(holder.tvRoomName, position, true)
             }
-            holder.tvRoomDesc.setOnClickListener {
-                showEditDialog(holder.tvRoomDesc, position, false)
+            holder.tvRoomBuilding.setOnClickListener {
+                showEditDialog(holder.tvRoomBuilding, position, false)
             }
         } else {
             holder.tvRoomName.setOnClickListener(null)
-            holder.tvRoomDesc.setOnClickListener(null)
+            holder.tvRoomBuilding.setOnClickListener(null)
         }
 
         // Set card size to be square: edge = (device width - 60dp) / 2
@@ -115,7 +115,7 @@ class RoomAdapter(
         // Set text size proportionally to card width (12/190 ratio)
         val textSize = (cardEdge * 12 / 190).toFloat()
         holder.tvRoomName.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize)
-        holder.tvRoomDesc.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize)
+        holder.tvRoomBuilding.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize)
         holder.tvDeviceCount.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize)
 
         // Set Room TextView marginTop proportionally to card width (20/190 ratio)
@@ -126,9 +126,9 @@ class RoomAdapter(
 
         // Set Building TextView marginTop proportionally to card width (4/190 ratio)
         val buildingMarginTop = (cardEdge * 4 / 190).toInt()
-        val buildingParams = holder.tvRoomDesc.layoutParams as MarginLayoutParams
+        val buildingParams = holder.tvRoomBuilding.layoutParams as MarginLayoutParams
         buildingParams.topMargin = buildingMarginTop
-        holder.tvRoomDesc.layoutParams = buildingParams
+        holder.tvRoomBuilding.layoutParams = buildingParams
 
         // Set device count TextView marginTop proportionally to card width (10/190 ratio)
         val deviceMarginTop = (cardEdge * 10 / 190).toInt()
@@ -182,7 +182,7 @@ class RoomAdapter(
 
     class RoomViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val tvRoomName: TextView = itemView.findViewById(R.id.tvRoomName)
-        val tvRoomDesc: TextView = itemView.findViewById(R.id.tvRoomDesc)
+        val tvRoomBuilding: TextView = itemView.findViewById(R.id.tvRoomBuilding)
         val tvDeviceCount: TextView = itemView.findViewById(R.id.tvDeviceCount)
         val imgRoom: ImageView = itemView.findViewById(R.id.imgRoom)
         val imgRemove: ImageButton = itemView.findViewById(R.id.imgRemove)

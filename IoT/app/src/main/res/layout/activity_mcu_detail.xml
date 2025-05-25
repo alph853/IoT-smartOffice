@@ -70,9 +70,11 @@
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
+        android:paddingBottom="100dp"
+        android:clipToPadding="false"
+        android:scrollbars="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@id/header_layout">
-
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -82,7 +84,7 @@
             android:paddingTop="27dp"
             android:orientation="vertical">
 
-            <!-- Component Section -->
+            <!-- Sensors Section -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -92,7 +94,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Component"
+                    android:text="Sensors"
                     android:textColor="@color/grey"
                     android:textSize="12sp"
                     android:layout_marginStart="8dp"/>
@@ -102,18 +104,41 @@
                     android:layout_height="0dp"
                     android:layout_weight="1" />
 
-                <ImageButton
-                    android:id="@+id/btnComponentMenu"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:src="@drawable/ic_menu"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Component Menu"
-                    android:layout_marginEnd="4dp" />
             </LinearLayout>
 
             <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvComponents"
+                android:id="@+id/rvSensors"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:overScrollMode="never"
+                android:clipToPadding="false"
+                android:paddingBottom="8dp" />
+
+            <!-- Actuators Section -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Actuators"
+                    android:textColor="@color/grey"
+                    android:textSize="12sp"
+                    android:layout_marginStart="8dp"/>
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvActuators"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:overScrollMode="never"
