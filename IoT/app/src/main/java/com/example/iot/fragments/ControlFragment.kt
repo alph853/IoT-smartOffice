@@ -12,19 +12,21 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.iot.Device
-import com.example.iot.DeviceAdapter
-import com.example.iot.DeviceType
-import com.example.iot.Mode
-import com.example.iot.R
-import com.example.iot.Room
-import com.example.iot.RoomManager
-import com.example.iot.SensorData
-import com.example.iot.SensorType
-import com.example.iot.Threshold
+import com.example.iot.domain.models.Device
+import com.example.iot.domain.models.DeviceType
+import com.example.iot.domain.models.Mode
+import com.example.iot.domain.models.Room
+import com.example.iot.domain.managers.RoomManager
+import com.example.iot.domain.models.SensorData
+import com.example.iot.domain.models.SensorType
+import com.example.iot.domain.models.Threshold
 import com.google.android.material.tabs.TabLayout
 import java.util.*
 import kotlin.concurrent.fixedRateTimer
+import com.example.iot.ui.adapters.DeviceAdapter
+import com.example.iot.R
+import com.example.iot.domain.models.MCU
+import com.example.iot.domain.models.Component
 
 /**
  * ControlFragment - Displays and controls actuators from all devices (MCUs) in each room

@@ -1,4 +1,4 @@
-package com.example.iot
+package com.example.iot.domain.models
 
 /**
  * SensorData lưu trữ giá trị từ các cảm biến

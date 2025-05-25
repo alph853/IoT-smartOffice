@@ -1,8 +1,11 @@
-package com.example.iot
+package com.example.iot.ui.adapters
 
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.widget.SwitchCompat
@@ -10,6 +13,10 @@ import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.example.iot.domain.models.Device
+import com.example.iot.domain.models.DeviceType
+import com.example.iot.domain.models.MCU
+import com.example.iot.R
 
 /**
  * Adapter for displaying IoT devices in a grid

@@ -1,4 +1,4 @@
-package com.example.iot
+package com.example.iot.ui.activities
 
 import android.os.Bundle
 import android.util.Log
@@ -22,6 +22,17 @@ import com.google.gson.reflect.TypeToken
 import java.io.InputStreamReader
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
+import com.example.iot.domain.models.Room
+import com.example.iot.domain.managers.RoomManager
+import com.example.iot.ui.adapters.RoomAdapter
+import com.example.iot.ui.navigation.NavigationBar
+import com.example.iot.fragments.NotificationFragment
+import com.example.iot.fragments.ControlFragment
+import com.example.iot.fragments.CameraFragment
+import com.example.iot.fragments.SettingFragment
+import com.example.iot.domain.managers.SensorManager
+import com.example.iot.domain.managers.ActuatorManager
+import com.example.iot.R
 
 class MainActivity : AppCompatActivity() {
 

@@ -1,4 +1,6 @@
-package com.example.iot
+package com.example.iot.domain.managers
+
+import com.example.iot.domain.models.Sensor
 
 object SensorManager {
     private val sensors = mutableListOf<Sensor>()

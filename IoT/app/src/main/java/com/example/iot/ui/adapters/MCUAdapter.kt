@@ -1,4 +1,4 @@
-package com.example.iot
+package com.example.iot.ui.adapters
 
 import android.content.res.Resources
 import android.util.TypedValue
@@ -16,7 +16,10 @@ import android.widget.EditText
 import android.widget.Button
 import android.content.Context
 import androidx.core.content.ContextCompat
-
+import com.example.iot.domain.models.MCU
+import com.example.iot.domain.models.Room
+import com.example.iot.domain.models.Component
+import com.example.iot.R
 
 class MCUAdapter(
     private val room: Room,

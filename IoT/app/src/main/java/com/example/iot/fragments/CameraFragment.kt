@@ -14,24 +14,15 @@ class CameraFragment : BaseFragment() {
     
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
         etPrompt = view.findViewById(R.id.et_prompt)
         setupTextChangeListener()
     }
     
     private fun setupTextChangeListener() {
         etPrompt.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-                // Handle before text changed if needed
-            }
-
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                // Handle on text changed if needed
-            }
-
-            override fun afterTextChanged(s: Editable?) {
-                // Handle after text changed if needed
-            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {}
         })
     }
     

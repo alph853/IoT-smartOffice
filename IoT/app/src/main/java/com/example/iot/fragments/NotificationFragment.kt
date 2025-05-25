@@ -1,4 +1,4 @@
-package com.example.iot
+package com.example.iot.fragments
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -11,8 +11,12 @@ import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.iot.fragments.ControlFragment
 import com.google.android.material.tabs.TabLayout
+import com.example.iot.data.viewmodels.NotificationViewModel
+import com.example.iot.data.viewmodels.NotificationFilter
+import com.example.iot.data.viewmodels.Notification
+import com.example.iot.ui.adapters.NotificationAdapter
+import com.example.iot.R
 
 class NotificationFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
@@ -63,9 +67,9 @@ class NotificationFragment : Fragment() {
     private fun setupRecyclerView(view: View) {
         recyclerView = view.findViewById(R.id.recycler_notifications)
         adapter = NotificationAdapter(
-            onItemClick = { notification -> viewModel.toggleRead(notification) },
-            onItemLongClick = { notification -> viewModel.toggleRead(notification) },
-            onItemSwiped = { notification -> viewModel.deleteNotification(notification) }
+            onItemClick = { notification: Notification -> viewModel.toggleRead(notification) },
+            onItemLongClick = { notification: Notification -> viewModel.toggleRead(notification) },
+            onItemSwiped = { notification: Notification -> viewModel.deleteNotification(notification) }
         )
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter

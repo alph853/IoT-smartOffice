@@ -1,4 +1,4 @@
-package com.example.iot
+package com.example.iot.ui.adapters
 
 import android.app.AlertDialog
 import android.content.Context
@@ -10,6 +10,8 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.example.iot.domain.models.Component
+import com.example.iot.R
 
 class ComponentAdapter(
     private val components: MutableList<Component>,

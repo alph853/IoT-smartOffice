@@ -1,4 +1,4 @@
-package com.example.iot
+package com.example.iot.ui.activities
 
 import android.content.Context
 import android.content.Intent
@@ -15,6 +15,12 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import android.widget.PopupMenu
+import com.example.iot.domain.models.Room
+import com.example.iot.domain.models.MCU
+import com.example.iot.ui.adapters.MCUAdapter
+import com.example.iot.domain.managers.RoomManager
+import com.example.iot.ui.navigation.NavigationBar
+import com.example.iot.R
 
 class RoomDetailActivity : AppCompatActivity() {
 

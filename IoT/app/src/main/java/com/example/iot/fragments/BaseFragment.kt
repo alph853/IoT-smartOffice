@@ -7,9 +7,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 
 abstract class BaseFragment : Fragment() {
-
     abstract fun getLayoutResId(): Int
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,

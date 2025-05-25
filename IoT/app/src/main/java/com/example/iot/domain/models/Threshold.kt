@@ -1,4 +1,4 @@
-package com.example.iot
+package com.example.iot.domain.models
 
 /**
  * Threshold lưu trữ ngưỡng bật/tắt cho mỗi thiết bị trong chế độ Auto

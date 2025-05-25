@@ -1,4 +1,4 @@
-package com.example.iot
+package com.example.iot.domain.models
 
 /**
  * SensorType định nghĩa các loại cảm biến được sử dụng trong hệ thống

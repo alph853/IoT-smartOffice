@@ -1,4 +1,4 @@
-package com.example.iot
+package com.example.iot.ui.adapters
 
 import android.content.res.Resources
 import android.util.TypedValue
@@ -14,6 +14,9 @@ import android.widget.ImageButton
 import android.app.AlertDialog
 import android.widget.EditText
 import android.widget.Button
+import com.example.iot.domain.models.Room
+import com.example.iot.domain.managers.RoomManager
+import com.example.iot.R
 
 class RoomAdapter(
     private val rooms: MutableList<Room>,

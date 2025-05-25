@@ -1,4 +1,4 @@
-package com.example.iot
+package com.example.iot.domain.models
 
 /**
  * Mode định nghĩa các chế độ hoạt động cho các thiết bị

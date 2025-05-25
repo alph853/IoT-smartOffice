@@ -1,4 +1,4 @@
-package com.example.iot
+package com.example.iot.ui.activities
 
 import android.content.Context
 import android.content.Intent
@@ -17,6 +17,14 @@ import android.widget.ImageButton
 import android.widget.PopupMenu
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.iot.domain.models.MCU
+import com.example.iot.domain.models.Room
+import com.example.iot.domain.managers.RoomManager
+import com.example.iot.ui.adapters.SensorAdapter
+import com.example.iot.ui.adapters.ActuatorAdapter
+import com.example.iot.ui.navigation.NavigationBar
+import com.example.iot.ui.activities.MainActivity
+import com.example.iot.R
 
 class MCUDetailActivity : AppCompatActivity() {
 

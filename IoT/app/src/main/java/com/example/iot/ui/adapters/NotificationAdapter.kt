@@ -1,4 +1,4 @@
-package com.example.iot
+package com.example.iot.ui.adapters
 
 import android.graphics.Color
 import android.view.LayoutInflater
@@ -9,6 +9,8 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.example.iot.data.viewmodels.Notification
+import com.example.iot.R
 
 class NotificationAdapter(
     private val onItemClick: (Notification) -> Unit,

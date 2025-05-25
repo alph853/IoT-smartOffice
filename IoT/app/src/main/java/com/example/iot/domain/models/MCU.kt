@@ -1,4 +1,18 @@
-package com.example.iot
+package com.example.iot.domain.models
+
+import android.content.Context
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
+import com.example.iot.R
+import com.example.iot.domain.models.Sensor
+import com.example.iot.domain.models.Actuator
+
 
 data class Component(
     var name: String = "Component Name",
