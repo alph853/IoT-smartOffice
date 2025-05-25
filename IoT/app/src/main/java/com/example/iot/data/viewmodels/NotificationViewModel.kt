@@ -5,7 +5,8 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.map
 import com.example.iot.domain.managers.NotificationManager
-import com.example.iot.data.viewmodels.NotificationFilter
+
+enum class NotificationFilter { ALL, READ, UNREAD }
 
 class NotificationViewModel : ViewModel() {
     private val _notifications = MutableLiveData<List<Notification>>(emptyList())
