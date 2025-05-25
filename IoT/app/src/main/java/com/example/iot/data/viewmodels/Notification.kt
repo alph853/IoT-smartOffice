@@ -1,10 +1,14 @@
 package com.example.iot.data.viewmodels
 
+import com.example.iot.R
+
 data class Notification(
-    val id: Int,
-    val iconRes: Int,
-    val title: String,
-    val summary: String,
-    val time: String,
-    var isRead: Boolean = false
+    var id: Int,
+    var message: String,
+    var read_status: Boolean,
+    var type: String,
+    var title: String,
+    var device_id: Int,
+    var ts: String,
+    val iconRes: Int = R.drawable.ic_notifications
 ) 

@@ -38,6 +38,9 @@ import com.example.iot.domain.managers.SensorManager
 import com.example.iot.domain.managers.ActuatorManager
 import com.example.iot.R
 
+import com.example.iot.domain.managers.NotificationManager
+import com.example.iot.data.viewmodels.Notification
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var navigationBar: NavigationBar

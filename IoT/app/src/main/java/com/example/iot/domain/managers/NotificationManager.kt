@@ -1,4 +1,6 @@
-package com.example.iot
+package com.example.iot.domain.managers
+
+import com.example.iot.data.viewmodels.Notification
 
 /**
  * Singleton class to manage notification data across activity recreations

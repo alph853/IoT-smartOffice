@@ -11,6 +11,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
+import com.example.iot.ui.navigation.NavigationBar
+import com.example.iot.ui.activities.MainActivity
+import com.example.iot.data.viewmodels.Notification
 
 class NotificationDetailActivity : AppCompatActivity() {
 

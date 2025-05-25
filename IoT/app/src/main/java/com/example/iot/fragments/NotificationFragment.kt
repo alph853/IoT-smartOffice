@@ -13,14 +13,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
 import com.example.iot.fragments.ControlFragment
-import com.example.iot.NotificationManager
+import com.example.iot.domain.managers.NotificationManager
 import com.example.iot.NotificationDetailActivity
 import android.content.Intent
 
 import com.google.android.material.tabs.TabLayout
+import com.example.iot.data.viewmodels.Notification
 import com.example.iot.data.viewmodels.NotificationViewModel
 import com.example.iot.data.viewmodels.NotificationFilter
-import com.example.iot.data.viewmodels.Notification
 import com.example.iot.ui.adapters.NotificationAdapter
 import com.example.iot.R
 
