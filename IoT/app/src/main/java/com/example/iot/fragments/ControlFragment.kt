@@ -17,6 +17,8 @@ import com.example.iot.DeviceAdapter
 import com.example.iot.DeviceType
 import com.example.iot.Mode
 import com.example.iot.R
+import com.example.iot.Room
+import com.example.iot.RoomManager
 import com.example.iot.SensorData
 import com.example.iot.SensorType
 import com.example.iot.Threshold
@@ -24,12 +26,15 @@ import com.google.android.material.tabs.TabLayout
 import java.util.*
 import kotlin.concurrent.fixedRateTimer
 
+/**
+ * ControlFragment - Displays and controls actuators from all devices (MCUs) in each room
+ * Shows room tabs dynamically based on actual office rooms from JSON data
+ * Each room displays all actuators from all devices in that room for control purposes
+ */
 class ControlFragment : Fragment() {
-    // Room devices lists
-    private val bedroomDevices = mutableListOf<Device>()
-    private val livingRoomDevices = mutableListOf<Device>()
-    private val kitchenDevices = mutableListOf<Device>()
-    private val bathroomDevices = mutableListOf<Device>()
+    // Dynamic room devices map
+    private val roomDevicesMap = mutableMapOf<String, MutableList<Device>>()
+    private var roomsList = mutableListOf<Room>()
 
     // Device adapter
     private lateinit var deviceAdapter: DeviceAdapter
@@ -37,75 +42,122 @@ class ControlFragment : Fragment() {
     // UI references
     private lateinit var roomTitle: TextView
     private lateinit var devicesGrid: RecyclerView
-    private lateinit var temperatureValue: TextView
-    private lateinit var humidityValue: TextView
+//    private var temperatureValue: TextView? = null
+//    private var humidityValue: TextView? = null
     private lateinit var modeRadioGroup: RadioGroup
     private lateinit var modeDescription: TextView
     private lateinit var thresholdContainer: LinearLayout
     private lateinit var disabledMessage: TextView
+    private lateinit var tabLayout: TabLayout
 
     // Current selected room
-    private var currentRoom = "Bedroom"
+    private var currentRoom = ""
 
     // Current mode
     private val _currentMode = MutableLiveData(Mode.MANUAL)
     private val currentMode: LiveData<Mode> = _currentMode
 
     // Sensor data
-    private val _sensorData = MutableLiveData(SensorData())
-    private val sensorData: LiveData<SensorData> = _sensorData
+//    private val _sensorData = MutableLiveData(SensorData())
+//    private val sensorData: LiveData<SensorData> = _sensorData
 
     // Thresholds map
     private val thresholds = mutableMapOf<DeviceType, Threshold>()
 
     // Timer for sensor simulation
-    private var sensorTimer: Timer? = null
+//    private var sensorTimer: Timer? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_control, container, false)
-        // Initialize device data
-        initializeDeviceData()
-        // Initialize thresholds
-        initializeThresholds()
-        // Setup UI
-        setupUI(view)
-        // Setup click listeners
-        setupClickListeners(view)
-        // Setup mode control
-        setupModeControl()
-        // Start sensor simulation
-        startSensorSimulation()
+        
+        try {
+            // Initialize device data from RoomManager
+            initializeDeviceDataFromRooms()
+            // Initialize thresholds
+            initializeThresholds()
+            // Setup UI
+            setupUI(view)
+            // Setup dynamic tabs
+            setupDynamicTabs()
+            // Setup click listeners
+            setupClickListeners(view)
+            // Setup mode control
+            setupModeControl()
+            // Start sensor simulation
+//            startSensorSimulation()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Return a simple view if there's an error
+            return inflater.inflate(android.R.layout.simple_list_item_1, container, false)
+        }
+        
         return view
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        sensorTimer?.cancel()
+//        sensorTimer?.cancel()
     }
 
-    private fun initializeDeviceData() {
-        // Bedroom devices
-        bedroomDevices.add(Device("bed_fan", "Fan", DeviceType.FAN, R.drawable.ic_fan, false, "bedroom"))
-        bedroomDevices.add(Device("bed_ac", "AC", DeviceType.AC, R.drawable.ic_ac, true, "bedroom"))
-        bedroomDevices.add(Device("bed_ceiling", "Ceiling Light", DeviceType.CEILING_LIGHT, R.drawable.ic_ceiling_light, true, "bedroom"))
-        bedroomDevices.add(Device("bed_bulb", "Bulb", DeviceType.BULB, R.drawable.ic_bulb, false, "bedroom"))
-        bedroomDevices.add(Device("bed_purifier", "Purifier", DeviceType.PURIFIER, R.drawable.ic_purifier, false, "bedroom"))
-        bedroomDevices.add(Device("bed_climate", "Climate", DeviceType.CLIMATE, R.drawable.ic_climate, true, "bedroom"))
-        // Living room devices
-        livingRoomDevices.add(Device("living_fan", "Fan", DeviceType.FAN, R.drawable.ic_fan, true, "living_room"))
-        livingRoomDevices.add(Device("living_ac", "AC", DeviceType.AC, R.drawable.ic_ac, false, "living_room"))
-        livingRoomDevices.add(Device("living_ceiling", "Ceiling Light", DeviceType.CEILING_LIGHT, R.drawable.ic_ceiling_light, true, "living_room"))
-        livingRoomDevices.add(Device("living_bulb", "Bulb", DeviceType.BULB, R.drawable.ic_bulb, true, "living_room"))
-        // Kitchen devices
-        kitchenDevices.add(Device("kitchen_fan", "Fan", DeviceType.FAN, R.drawable.ic_fan, false, "kitchen"))
-        kitchenDevices.add(Device("kitchen_ceiling", "Ceiling Light", DeviceType.CEILING_LIGHT, R.drawable.ic_ceiling_light, true, "kitchen"))
-        kitchenDevices.add(Device("kitchen_bulb", "Bulb", DeviceType.BULB, R.drawable.ic_bulb, true, "kitchen"))
-        // Bathroom devices
-        bathroomDevices.add(Device("bath_fan", "Fan", DeviceType.FAN, R.drawable.ic_fan, false, "bathroom"))
-        bathroomDevices.add(Device("bath_ceiling", "Ceiling Light", DeviceType.CEILING_LIGHT, R.drawable.ic_ceiling_light, false, "bathroom"))
-        bathroomDevices.add(Device("bath_bulb", "Bulb", DeviceType.BULB, R.drawable.ic_bulb, false, "bathroom"))
+    private fun initializeDeviceDataFromRooms() {
+        try {
+            roomDevicesMap.clear()
+            roomsList.clear()
+            
+            val rooms = RoomManager.getRooms()
+            if (rooms.isEmpty()) {
+                return // No rooms available
+            }
+            
+            roomsList.addAll(rooms)
+            
+            roomsList.forEach { room ->
+                val devices = mutableListOf<Device>()
+                
+                // Convert only actuators from all MCU devices in the room to Device objects for control
+                room.devices.forEach { mcu ->
+                    // Add only actuators as controllable devices (skip sensors)
+                    mcu.actuators.forEach { actuator ->
+                        val deviceType = when (actuator.type.lowercase()) {
+                            "fan" -> DeviceType.FAN
+                            "led4rgb", "led", "light", "indicator" -> DeviceType.BULB
+                            "lighting" -> DeviceType.CEILING_LIGHT
+                            "ac", "air_conditioner" -> DeviceType.AC
+                            "purifier" -> DeviceType.PURIFIER
+                            else -> DeviceType.BULB
+                        }
+                        
+                        val iconRes = when (actuator.type.lowercase()) {
+                            "fan" -> R.drawable.ic_fan
+                            "led4rgb" -> R.drawable.ic_bulb // We could use ic_led4rgb if it exists
+                            "led", "light", "indicator" -> R.drawable.ic_bulb
+                            "lighting" -> R.drawable.ic_ceiling_light
+                            "ac", "air_conditioner" -> R.drawable.ic_ac
+                            "purifier" -> R.drawable.ic_purifier
+                            else -> R.drawable.ic_bulb
+                        }
+                        
+                        devices.add(Device(
+                            id = "actuator_${actuator.id}",
+                            name = actuator.name,
+                            type = deviceType,
+                            iconResId = iconRes,
+                            isOn = false, // Default to off
+                            room = room.name
+                        ))
+                    }
+                }
+                
+                roomDevicesMap[room.name] = devices
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Ensure we have empty but valid data structures
+            roomDevicesMap.clear()
+            roomsList.clear()
+        }
     }
 
     private fun initializeThresholds() {
@@ -119,12 +171,13 @@ class ControlFragment : Fragment() {
     private fun setupUI(view: View) {
         roomTitle = view.findViewById(R.id.room_title)
         devicesGrid = view.findViewById(R.id.devices_grid)
-        temperatureValue = view.findViewById(R.id.temperature_value)
-        humidityValue = view.findViewById(R.id.humidity_value)
+//        temperatureValue = view.findViewById(R.id.temperature_value) // May be null if sensor group is not included
+//        humidityValue = view.findViewById(R.id.humidity_value) // May be null if sensor group is not included
         modeRadioGroup = view.findViewById(R.id.mode_radio_group)
         modeDescription = view.findViewById(R.id.mode_description)
         thresholdContainer = view.findViewById(R.id.threshold_container)
         disabledMessage = view.findViewById(R.id.disabled_message)
+        tabLayout = view.findViewById(R.id.room_tabs)
         // Setup RecyclerView
         deviceAdapter = DeviceAdapter { device, isOn ->
             onDeviceToggled(device, isOn)
@@ -132,22 +185,19 @@ class ControlFragment : Fragment() {
         devicesGrid.layoutManager = GridLayoutManager(requireContext(), 2)
         devicesGrid.adapter = deviceAdapter
         
-        // Fix: cập nhật thiết bị phòng Bedroom ngay lần đầu
-        deviceAdapter.updateDevices(bedroomDevices)
-        
         // Setup sensor observers
-        setupSensorObservers()
+//        setupSensorObservers()
     }
 
-    private fun setupSensorObservers() {
-        sensorData.observe(viewLifecycleOwner) { data ->
-            temperatureValue.text = String.format(Locale.US, "%.1f °C", data.temperature)
-            humidityValue.text = String.format(Locale.US, "%.1f %%", data.humidity)
-            if (currentMode.value == Mode.AUTO) {
-                applyAutoLogic(data)
-            }
-        }
-    }
+//    private fun setupSensorObservers() {
+//        sensorData.observe(viewLifecycleOwner) { data ->
+//            temperatureValue?.text = String.format(Locale.US, "%.1f °C", data.temperature)
+//            humidityValue?.text = String.format(Locale.US, "%.1f %%", data.humidity)
+//            if (currentMode.value == Mode.AUTO) {
+//                applyAutoLogic(data)
+//            }
+//        }
+//    }
 
     private fun onDeviceToggled(device: Device, isOn: Boolean) {
         if (currentMode.value != Mode.MANUAL) return
@@ -159,39 +209,21 @@ class ControlFragment : Fragment() {
         }
         deviceAdapter.updateDevices(devices)
         // Nếu cần, cập nhật lại list gốc cho phòng hiện tại
-        when (currentRoom) {
-            getString(R.string.room_bedroom) -> {
-                bedroomDevices.clear(); bedroomDevices.addAll(devices)
-            }
-            getString(R.string.room_living_room) -> {
-                livingRoomDevices.clear(); livingRoomDevices.addAll(devices)
-            }
-            getString(R.string.room_kitchen) -> {
-                kitchenDevices.clear(); kitchenDevices.addAll(devices)
-            }
-            getString(R.string.room_bathroom) -> {
-                bathroomDevices.clear(); bathroomDevices.addAll(devices)
-            }
-        }
+        roomDevicesMap[currentRoom]?.clear()
+        roomDevicesMap[currentRoom]?.addAll(devices)
     }
 
     private fun setupClickListeners(view: View) {
-        val tabLayout = view.findViewById<TabLayout>(R.id.room_tabs)
         tabLayout?.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) {
-                when (tab?.position) {
-                    0 -> showRoom(getString(R.string.room_bedroom))
-                    1 -> showRoom(getString(R.string.room_living_room))
-                    2 -> showRoom(getString(R.string.room_kitchen))
-                    3 -> showRoom(getString(R.string.room_bathroom))
+                val position = tab?.position ?: 0
+                if (position < roomsList.size) {
+                    showRoom(roomsList[position].name)
                 }
             }
             override fun onTabUnselected(tab: TabLayout.Tab?) {}
             override fun onTabReselected(tab: TabLayout.Tab?) {}
         })
-        view.findViewById<View>(R.id.add_device_button)?.setOnClickListener {
-            Toast.makeText(requireContext(), getString(R.string.add_device_coming_soon), Toast.LENGTH_SHORT).show()
-        }
         view.findViewById<Button>(R.id.save_thresholds_button)?.setOnClickListener {
             saveThresholds()
         }
@@ -213,7 +245,7 @@ class ControlFragment : Fragment() {
                     thresholdContainer.visibility = View.VISIBLE
                     disabledMessage.visibility = View.GONE
                     devicesGrid.visibility = View.GONE
-                    applyAutoLogic(sensorData.value ?: SensorData())
+//                    applyAutoLogic(sensorData.value ?: SensorData())
                 }
                 R.id.mode_disabled -> {
                     _currentMode.value = Mode.DISABLED
@@ -227,71 +259,71 @@ class ControlFragment : Fragment() {
         }
     }
 
-    private fun applyAutoLogic(data: SensorData) {
-        if (currentMode.value != Mode.AUTO) return
-        val currentDevices = getDevicesForCurrentRoom()
-        var changed = false
-        currentDevices.forEachIndexed { index, device ->
-            val threshold = thresholds[device.type] ?: return@forEachIndexed
-            when (threshold.sensorType) {
-                SensorType.TEMPERATURE -> {
-                    if (data.temperature >= threshold.on && !device.isOn) {
-                        device.isOn = true
-                        Toast.makeText(requireContext(), getString(R.string.device_auto_turned_on, device.name), Toast.LENGTH_SHORT).show()
-                        deviceAdapter.notifyItemChanged(index)
-                        changed = true
-                    } else if (data.temperature < threshold.off && device.isOn) {
-                        device.isOn = false
-                        Toast.makeText(requireContext(), getString(R.string.device_auto_turned_off, device.name), Toast.LENGTH_SHORT).show()
-                        deviceAdapter.notifyItemChanged(index)
-                        changed = true
-                    }
-                }
-                SensorType.LIGHT -> {
-                    if (device.type == DeviceType.BULB) {
-                        if (data.light < threshold.on && data.motion && !device.isOn) {
-                            device.isOn = true
-                            Toast.makeText(requireContext(), getString(R.string.device_auto_turned_on, device.name), Toast.LENGTH_SHORT).show()
-                            deviceAdapter.notifyItemChanged(index)
-                            changed = true
-                        } else if ((data.light >= threshold.off || !data.motion) && device.isOn) {
-                            device.isOn = false
-                            Toast.makeText(requireContext(), getString(R.string.device_auto_turned_off, device.name), Toast.LENGTH_SHORT).show()
-                            deviceAdapter.notifyItemChanged(index)
-                            changed = true
-                        }
-                    } else {
-                        if (data.light < threshold.on && !device.isOn) {
-                            device.isOn = true
-                            Toast.makeText(requireContext(), getString(R.string.device_auto_turned_on, device.name), Toast.LENGTH_SHORT).show()
-                            deviceAdapter.notifyItemChanged(index)
-                            changed = true
-                        } else if (data.light >= threshold.off && device.isOn) {
-                            device.isOn = false
-                            Toast.makeText(requireContext(), getString(R.string.device_auto_turned_off, device.name), Toast.LENGTH_SHORT).show()
-                            deviceAdapter.notifyItemChanged(index)
-                            changed = true
-                        }
-                    }
-                }
-                SensorType.PM25 -> {
-                    if (data.pm25 > threshold.on && !device.isOn) {
-                        device.isOn = true
-                        Toast.makeText(requireContext(), getString(R.string.device_auto_turned_on, device.name), Toast.LENGTH_SHORT).show()
-                        deviceAdapter.notifyItemChanged(index)
-                        changed = true
-                    } else if (data.pm25 < threshold.off && device.isOn) {
-                        device.isOn = false
-                        Toast.makeText(requireContext(), getString(R.string.device_auto_turned_off, device.name), Toast.LENGTH_SHORT).show()
-                        deviceAdapter.notifyItemChanged(index)
-                        changed = true
-                    }
-                }
-                else -> {}
-            }
-        }
-        if (!changed) return
-    }
+//    private fun applyAutoLogic(data: SensorData) {
+//        if (currentMode.value != Mode.AUTO) return
+//        val currentDevices = getDevicesForCurrentRoom()
+//        var changed = false
+//        currentDevices.forEachIndexed { index, device ->
+//            val threshold = thresholds[device.type] ?: return@forEachIndexed
+//            when (threshold.sensorType) {
+//                SensorType.TEMPERATURE -> {
+//                    if (data.temperature >= threshold.on && !device.isOn) {
+//                        device.isOn = true
+//                        Toast.makeText(requireContext(), getString(R.string.device_auto_turned_on, device.name), Toast.LENGTH_SHORT).show()
+//                        deviceAdapter.notifyItemChanged(index)
+//                        changed = true
+//                    } else if (data.temperature < threshold.off && device.isOn) {
+//                        device.isOn = false
+//                        Toast.makeText(requireContext(), getString(R.string.device_auto_turned_off, device.name), Toast.LENGTH_SHORT).show()
+//                        deviceAdapter.notifyItemChanged(index)
+//                        changed = true
+//                    }
+//                }
+//                SensorType.LIGHT -> {
+//                    if (device.type == DeviceType.BULB) {
+//                        if (data.light < threshold.on && data.motion && !device.isOn) {
+//                            device.isOn = true
+//                            Toast.makeText(requireContext(), getString(R.string.device_auto_turned_on, device.name), Toast.LENGTH_SHORT).show()
+//                            deviceAdapter.notifyItemChanged(index)
+//                            changed = true
+//                        } else if ((data.light >= threshold.off || !data.motion) && device.isOn) {
+//                            device.isOn = false
+//                            Toast.makeText(requireContext(), getString(R.string.device_auto_turned_off, device.name), Toast.LENGTH_SHORT).show()
+//                            deviceAdapter.notifyItemChanged(index)
+//                            changed = true
+//                        }
+//                    } else {
+//                        if (data.light < threshold.on && !device.isOn) {
+//                            device.isOn = true
+//                            Toast.makeText(requireContext(), getString(R.string.device_auto_turned_on, device.name), Toast.LENGTH_SHORT).show()
+//                            deviceAdapter.notifyItemChanged(index)
+//                            changed = true
+//                        } else if (data.light >= threshold.off && device.isOn) {
+//                            device.isOn = false
+//                            Toast.makeText(requireContext(), getString(R.string.device_auto_turned_off, device.name), Toast.LENGTH_SHORT).show()
+//                            deviceAdapter.notifyItemChanged(index)
+//                            changed = true
+//                        }
+//                    }
+//                }
+//                SensorType.PM25 -> {
+//                    if (data.pm25 > threshold.on && !device.isOn) {
+//                        device.isOn = true
+//                        Toast.makeText(requireContext(), getString(R.string.device_auto_turned_on, device.name), Toast.LENGTH_SHORT).show()
+//                        deviceAdapter.notifyItemChanged(index)
+//                        changed = true
+//                    } else if (data.pm25 < threshold.off && device.isOn) {
+//                        device.isOn = false
+//                        Toast.makeText(requireContext(), getString(R.string.device_auto_turned_off, device.name), Toast.LENGTH_SHORT).show()
+//                        deviceAdapter.notifyItemChanged(index)
+//                        changed = true
+//                    }
+//                }
+//                else -> {}
+//            }
+//        }
+//        if (!changed) return
+//    }
 
     private fun disableAllDevices() {
         getDevicesForCurrentRoom().forEachIndexed { index, device ->
@@ -306,43 +338,59 @@ class ControlFragment : Fragment() {
     private fun showRoom(room: String) {
         currentRoom = room
         roomTitle.text = room
-        val devices = when (room) {
-            getString(R.string.room_bedroom) -> bedroomDevices
-            getString(R.string.room_living_room) -> livingRoomDevices
-            getString(R.string.room_kitchen) -> kitchenDevices
-            getString(R.string.room_bathroom) -> bathroomDevices
-            else -> bedroomDevices
-        }
+        val devices = roomDevicesMap[room] ?: mutableListOf()
         deviceAdapter.updateDevices(devices)
     }
 
     private fun getDevicesForCurrentRoom(): List<Device> {
-        return when (currentRoom) {
-            getString(R.string.room_bedroom) -> bedroomDevices
-            getString(R.string.room_living_room) -> livingRoomDevices
-            getString(R.string.room_kitchen) -> kitchenDevices
-            getString(R.string.room_bathroom) -> bathroomDevices
-            else -> bedroomDevices
-        }
+        return roomDevicesMap[currentRoom] ?: mutableListOf()
     }
 
     private fun saveThresholds() {
         Toast.makeText(requireContext(), getString(R.string.thresholds_saved), Toast.LENGTH_SHORT).show()
     }
 
-    private fun startSensorSimulation() {
-        sensorTimer = fixedRateTimer("sensorTimer", period = 5000) {
-            val currentData = _sensorData.value ?: SensorData()
-            val newTemperature = (currentData.temperature + (Math.random() * 2 - 1)).toFloat().coerceIn(15.0f, 40.0f)
-            val newHumidity = (currentData.humidity + (Math.random() * 4 - 2)).toFloat().coerceIn(30.0f, 90.0f)
-            Handler(Looper.getMainLooper()).post {
-                _sensorData.value = SensorData(
-                    temperature = newTemperature,
-                    humidity = newHumidity
-                )
+//    private fun startSensorSimulation() {
+//        sensorTimer = fixedRateTimer("sensorTimer", period = 5000) {
+//            val currentData = _sensorData.value ?: SensorData()
+//            val newTemperature = (currentData.temperature + (Math.random() * 2 - 1)).toFloat().coerceIn(15.0f, 40.0f)
+//            val newHumidity = (currentData.humidity + (Math.random() * 4 - 2)).toFloat().coerceIn(30.0f, 90.0f)
+//            Handler(Looper.getMainLooper()).post {
+//                _sensorData.value = SensorData(
+//                    temperature = newTemperature,
+//                    humidity = newHumidity
+//                )
+//            }
+//        }
+//    }
+
+    private fun setupDynamicTabs() {
+        try {
+            tabLayout?.removeAllTabs()
+            
+            if (roomsList.isEmpty()) {
+                // If no rooms available, add a default tab
+                tabLayout?.addTab(tabLayout.newTab().setText("No Rooms"))
+                return
             }
+            
+            roomsList.forEach { room ->
+                tabLayout?.addTab(tabLayout.newTab().setText(room.name))
+            }
+            
+            // Set the first room as current if available
+            if (roomsList.isNotEmpty()) {
+                currentRoom = roomsList[0].name
+                roomTitle.text = currentRoom
+                deviceAdapter.updateDevices(roomDevicesMap[currentRoom] ?: mutableListOf())
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Fallback: add a default tab
+            tabLayout?.addTab(tabLayout.newTab().setText("Error"))
         }
     }
+
     companion object {
         fun newInstance() = ControlFragment()
     }
