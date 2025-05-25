@@ -52,6 +52,7 @@ async def create_device(
     device: DeviceRegistration,
     device_service: DeviceService = Depends(get_device_service),
 ):
+    """Only for CRUD testing. The actual device creation is done through gateway (device registration)."""
     try:
         device = await device_service.create_device(device)
     except asyncpg.UniqueViolationError as e:
@@ -66,6 +67,7 @@ async def connect_device(
     device: DeviceRegistration,
     device_service: DeviceService = Depends(get_device_service),
 ):
+    """API exposed for the gateway to call for device registration. Create a new device if none exists."""
     device = await device_service.connect_device(device)
     return device
 

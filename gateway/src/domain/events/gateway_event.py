@@ -22,7 +22,6 @@ class TelemetryEvent(BaseModel):
 
 class ControlResponseEvent(BaseModel):
     status: str
-    data: dict
 
 
 class TestEvent(BaseModel):

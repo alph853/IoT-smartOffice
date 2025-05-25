@@ -2,14 +2,22 @@ from pydantic import BaseModel
 from enum import Enum
 from typing import Tuple
 
+from app.domain.models import Notification
+
 
 COLOR_MAP = {
-    "yellow": [255, 255, 0],
-    "purple": [128, 0, 128],
-    "orange": [255, 165, 0],
-    "white": [255, 255, 255],
-    "pink": [255, 192, 203]
+    "yellow": (255, 255, 0),
+    "purple": (128, 0, 128),
+    "orange": (255, 165, 0),
+    "white": (255, 255, 255),
+    "pink": (255, 192, 203),
+    "off": (0, 0, 0),
 }
+
+
+class BroadcastMessage(BaseModel):
+    method: str
+    params: Notification | None = None
 
 
 class SupportedColor(str, Enum):
@@ -18,6 +26,7 @@ class SupportedColor(str, Enum):
     ORANGE = "orange"
     WHITE = "white"
     PINK = "pink"
+    OFF = "off"
 
 # Base RPC Models
 class RPCRequest(BaseModel):
@@ -28,10 +37,14 @@ class RPCResponse(BaseModel):
     status: str
     data: dict | None = None
 
+
 # Parameter Models
+ColorType = SupportedColor | Tuple[int, int, int]
+ColorTuple = Tuple[ColorType, ColorType, ColorType, ColorType]
+
 class LightingSetParams(BaseModel):
     brightness: int = 100
-    color: SupportedColor | Tuple[int, int, int]
+    color: ColorTuple
     actuator_id: int | None = None
 
 

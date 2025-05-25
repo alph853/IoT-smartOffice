@@ -10,16 +10,16 @@ SELECT * FROM device WHERE mac_addr = $1
 """
 
 CREATE_DEVICE = """
-INSERT INTO device (name, registered_at, mac_addr, description, fw_version, last_seen_at, model, office_id, gateway_id, status, access_token)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-RETURNING id, name, registered_at, mac_addr, description, fw_version, last_seen_at, model, office_id, gateway_id, status, access_token
+INSERT INTO device (name, registered_at, mac_addr, description, fw_version, last_seen_at, model, office_id, gateway_id, status, access_token, thingsboard_name, device_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+RETURNING id, name, registered_at, mac_addr, description, fw_version, last_seen_at, model, office_id, gateway_id, status, access_token, thingsboard_name, device_id
 """
 
 UPDATE_DEVICE = """
 UPDATE device
 SET {set_clauses}
 WHERE id = $1
-RETURNING id, name, registered_at, mac_addr, description, fw_version, last_seen_at, model, office_id, gateway_id, status, access_token
+RETURNING id, name, registered_at, mac_addr, description, fw_version, last_seen_at, model, office_id, gateway_id, status, access_token, thingsboard_name, device_id
 """
 
 DELETE_ALL_DEVICES = """
@@ -43,18 +43,27 @@ WHERE id = $1
 RETURNING id, name, type, unit, device_id
 """
 
+DELETE_SENSORS_BY_DEVICE_ID = """
+DELETE FROM sensor WHERE device_id = $1
+"""
+
 CREATE_ACTUATOR = """
-INSERT INTO actuator (name, type, device_id, mode)
-VALUES ($1, $2, $3, $4)
-RETURNING id, name, type, device_id, mode
+INSERT INTO actuator (name, type, device_id, mode, setting)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, name, type, device_id, mode, setting
 """
 
 UPDATE_ACTUATOR = """
 UPDATE actuator
 SET {set_clauses}
 WHERE id = $1
-RETURNING id, name, type, device_id, mode
+RETURNING id, name, type, device_id, mode, setting
 """
+
+DELETE_ACTUATORS_BY_DEVICE_ID = """
+DELETE FROM actuator WHERE device_id = $1
+"""
+
 GET_ALL_SENSORS = """
 SELECT * FROM sensor
 """

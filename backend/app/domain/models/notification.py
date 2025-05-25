@@ -11,12 +11,13 @@ class NotificationType(Enum):
 
 
 class Notification(BaseModel):
-    id: str | None = None
+    id: int | None = None
     message: str
     read_status: bool = False
     type: NotificationType
     title: str
     device_id: int | None = None
-    ts: datetime | None = None
+    ts: datetime = datetime.now()
 
-
+    class Config:
+        use_enum_values = True

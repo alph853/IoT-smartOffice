@@ -5,7 +5,7 @@ from src.domain.models import DeviceMode, DeviceStatus
 
 
 class RPCRequest(BaseModel):
-    request_id: int | None = None
+    request_id: str
 
 
 class DeleteDeviceEvent(RPCRequest):
@@ -22,18 +22,16 @@ class GatewayDeviceDeletedEvent(RPCRequest):
 
 
 class UpdateActuatorEvent(RPCRequest):
-    device_id: int
+    actuator_id: int
     actuator_update: dict
 
 
-class SetModeEvent(RPCRequest):
-    device_id: int
-    mode: DeviceMode
-
+SingleColorType = Tuple[int, int, int]
+Led4ColorType = Tuple[SingleColorType, SingleColorType, SingleColorType, SingleColorType]
 
 class SetLightingEvent(RPCRequest):
     actuator_id: int
-    color: Tuple[int, int, int]
+    color: Led4ColorType
 
 
 class SetFanStateEvent(RPCRequest):

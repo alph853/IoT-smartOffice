@@ -99,7 +99,7 @@
                 "dst": "device"
             },
             "control_commands": {
-                "topic": "gateway/control/commands/{device_id}",
+                "topic": "gateway/control/command/{device_id}",
                 "qos": 1,
                 "retain": true,
                 "description": "Forward cloud commands to the device",
@@ -117,7 +117,7 @@
         }
     },
     "backend": {
-        "url": "http://192.168.1.180:8000",
+        "url": "https://10diemiot.ngrok.io",
         "api": {
             "get_all_devices": {
                 "url": "/devices",

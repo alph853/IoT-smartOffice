@@ -37,13 +37,14 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 - Set Lighting
+Supported Colors: white, yellow, purple, orange, pink
 ```json
 {
     "method": "setLighting",
     "params": {
-        "actuator_id": 161,
+        "actuator_id": 342,
         "brightness": 100,
-        "color": "red"
+        "color": ["white", "yellow", [255,100,128], [120,120,100]]
     }
 }
 ```

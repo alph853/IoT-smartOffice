@@ -2,7 +2,7 @@ import asyncio
 from typing import Any, Type, List, Dict
 from collections import defaultdict
 
-from app.domain.events import EventBusInterface, EventHandler
+from app.domain.events import EventBusInterface, EventHandler, DeviceDisconnectedEvent
 
 
 class InProcEventBus(EventBusInterface):

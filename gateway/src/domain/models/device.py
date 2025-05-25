@@ -19,32 +19,35 @@ class DeviceMode(Enum):
 
 
 class Sensor(BaseModel):
-    id: int
+    id: int | None = None
     name: str
     description: str | None = None
     unit: str | None = None
     status: DeviceStatus | None = None
     type: str | None = None
+    device_id: int | None = None
 
     class Config:
         use_enum_values = True
 
 
 class Actuator(BaseModel):
-    id: int
+    id: int | None = None
     name: str
     description: str | None = None
     mode: DeviceMode | None = None
     status: DeviceStatus | None = None
     type: str | None = None
+    device_id: int | None = None
+    setting: dict | None = None
 
     class Config:
         use_enum_values = True
 
 
 class Device(BaseModel):
-    id: int
-    name: str
+    id: int | None = None
+    thingsboard_name: str
     fw_version: str
     status: DeviceStatus
     access_token: str | None = None

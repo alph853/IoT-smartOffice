@@ -3,20 +3,23 @@ import asyncio
 from typing import List
 import json
 
-from src.domain.models import Device, DeviceStatus, DeviceMode
+from src.domain.models import Device, DeviceStatus, DeviceMode, Actuator
 from src.domain.repositories import CacheClientRepository, HttpClientRepository
 from loguru import logger
+from src.domain.events import SetLightingEvent, SetFanStateEvent, EventBusInterface
 
 
 class RedisCacheClient(CacheClientRepository):
-    def __init__(self, host: str, port: int, db: int, 
-                 http_client: HttpClientRepository):
+    def __init__(self, host: str, port: int, db: int,
+                 http_client: HttpClientRepository,
+                 event_bus: EventBusInterface):
         self.host   = host
         self.port   = port
         self.db     = db
         self.client = None
 
         self.http_client = http_client
+        self.event_bus = event_bus
 
     # -------------------------------------------------------------
     # ------------------------- Lifecycle -------------------------
@@ -57,13 +60,24 @@ class RedisCacheClient(CacheClientRepository):
 
     async def add_device(self, device: Device) -> Device:
         device_key    = f"device:id:{device.id}"
-        actuator_keys = {f"device:actuator:{actuator.id}" : device.id for actuator in device.actuators}
-        sensor_keys   = {f"device:sensor:{sensor.id}" : device.id for sensor in device.sensors}
+        for actuator in device.actuators:
+            actuator.device_id = device.id
+        for sensor in device.sensors:
+            sensor.device_id = device.id
+
+        actuator_tasks = [self.client.set(f"device:actuator:{actuator.id}",
+                                          json.dumps(actuator.model_dump(exclude_none=True)))
+                          for actuator in device.actuators
+                          ]
+        sensor_tasks = [self.client.set(f"device:sensor:{sensor.id}",
+                                        json.dumps(sensor.model_dump(exclude_none=True)))
+                        for sensor in device.sensors
+                        ]
 
         async_tasks = [
             self.client.set(device_key, json.dumps(device.model_dump(exclude_none=True))),
-            self.client.mset(actuator_keys),
-            self.client.mset(sensor_keys)
+            *actuator_tasks,
+            *sensor_tasks
         ]
         await asyncio.gather(*async_tasks)
 
@@ -73,8 +87,8 @@ class RedisCacheClient(CacheClientRepository):
         device = await self.get_device_by_id(device_id)
         if device:
             await self.client.delete(f"device:id:{device_id}")
-            await self.client.delete(f"device:actuator:{actuator.id}" for actuator in device.actuators)
-            await self.client.delete(f"device:sensor:{sensor.id}" for sensor in device.sensors)
+            await self.client.delete(*[f"device:actuator:{actuator.id}" for actuator in device.actuators])
+            await self.client.delete(*[f"device:sensor:{sensor.id}" for sensor in device.sensors])
             return True
         return False
 
@@ -100,6 +114,19 @@ class RedisCacheClient(CacheClientRepository):
             return device.mode
         return None
 
+    async def update_actuator(self, actuator_id: int, info: dict) -> bool:
+        try:
+            actuator_key = f"device:actuator:{actuator_id}"
+            actuator = await self.client.get(actuator_key)
+            if actuator:
+                actuator = json.loads(actuator)
+                actuator.update(info)
+                await self.client.set(actuator_key, json.dumps(actuator))
+                return True
+        except Exception as e:
+            logger.error(f"Error updating actuator: {e}")
+            return False
+
     # -------------------------------------------------------------
     # ------------------------- Control -------------------------
     # -------------------------------------------------------------
@@ -111,10 +138,11 @@ class RedisCacheClient(CacheClientRepository):
         pass
 
     async def get_device_id_by_actuator_id(self, actuator_id: int) -> int | None:
-        device_key = f"device:actuator:{actuator_id}"
-        device_id = await self.client.get(device_key)
-        if device_id:
-            return int(device_id)
+        actuator_key = f"device:actuator:{actuator_id}"
+        actuator = await self.client.get(actuator_key)
+        if actuator:
+            actuator = json.loads(actuator)
+            return actuator["device_id"]
         return None
 
     # -------------------------------------------------------------

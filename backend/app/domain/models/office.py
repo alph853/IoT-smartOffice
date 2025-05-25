@@ -1,4 +1,6 @@
 from pydantic import BaseModel
+from typing import List, Optional
+from .device import Device
 
 
 class Office(BaseModel):
@@ -7,4 +9,5 @@ class Office(BaseModel):
     building: str | None = None
     description: str | None = None
     name: str
+    devices: Optional[List[Device]] = None
 

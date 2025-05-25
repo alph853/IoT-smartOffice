@@ -31,3 +31,7 @@ class MqttCloudClientRepository(ABC):
     @abstractmethod
     async def update_actuator(self, actuator_id: int, actuator_update: ActuatorUpdate) -> RPCResponse:
         pass
+
+    @abstractmethod
+    async def get_client_id(self, device_name: str) -> str:
+        pass

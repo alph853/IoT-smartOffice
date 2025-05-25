@@ -1,4 +1,13 @@
-def foo(a=1, b=2, *args, d=4, **kwargs):
-    print(a, b, args, d, kwargs)
+brightness = 20
+color = ((100, 100, 100), "blue", (100, 100, 100), (100, 100, 100))
 
-foo(1, 2, 3, 4, d=11, e=12, f=13)
+COLOR_MAP = {
+    "red": (255, 0, 0),
+    "green": (0, 255, 0),
+    "blue": (0, 0, 255),
+}
+
+data = tuple(map(lambda x: tuple(map(lambda y: int(y * brightness / 100),
+             x if type(x) is not str else COLOR_MAP[x])), color))
+
+print(data)

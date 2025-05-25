@@ -5,7 +5,7 @@ from typing import List
 
 from app.domain.events import EventBusInterface, NotificationEvent, DeviceConnectedEvent, DeviceDisconnectedEvent
 from app.domain.repositories import NotificationRepository, OfficeRepository
-from app.domain.models import Notification, NotificationType
+from app.domain.models import Notification, NotificationType, BroadcastMessage
 
 
 class NotificationService:
@@ -20,6 +20,7 @@ class NotificationService:
         self.events = {
             DeviceConnectedEvent: self._handle_device_connected_event,
             DeviceDisconnectedEvent: self._handle_device_disconnected_event,
+            NotificationEvent: self._handle_notification_event,
         }
 
     # ---------------------------------------------------------
@@ -71,29 +72,49 @@ class NotificationService:
     # ---------------------------------------------------------
 
     async def _handle_device_connected_event(self, event: DeviceConnectedEvent):
-        device = event.device
-        office = await self.office_repo.get_office_by_id(device.office_id)
+        try:
+            device = event.device
+            office = await self.office_repo.get_office_by_id(device.office_id)
 
-        notification = Notification(
-            title=f"Device {device.name} connected",
-            message=f"Device {device.name} ({office.name}) connected successfully. Navigate to device page to view more details.",
-            type=NotificationType.INFO,
-            device_id=device.id,
-            ts=datetime.now()
-        )
-        await self.create_notification(notification)
-        await self.event_bus.publish(NotificationEvent(notification))
+            notification = Notification(
+                title=f"Device {device.name} connected",
+                message=f"Device {device.name} ({office.name}) connected successfully. Navigate to device page to view more details.",
+                type=NotificationType.INFO,
+                device_id=device.id,
+            )
+            notification = await self.create_notification(notification)
+            await self.event_bus.publish(BroadcastMessage(
+                method="notification",
+                params=notification.model_dump(exclude_none=True),
+            ))
+        except Exception as e:
+            logger.error(f"Error handling device connected event: {e}")
 
     async def _handle_device_disconnected_event(self, event: DeviceDisconnectedEvent):
-        device = event.device
-        office = await self.office_repo.get_office_by_id(device.office_id)
+        try:
+            device = event.device
+            office = await self.office_repo.get_office_by_id(device.office_id)
 
-        notification = Notification(
-            title=f"Device {device.name} disconnected",
-            message=f"Device {device.name} ({office.name}) disconnected normally.",
-            type=NotificationType.INFO,
-            device_id=device.id,
-            ts=datetime.now()
-        )
-        await self.create_notification(notification)
-        await self.event_bus.publish(NotificationEvent(notification))
+            notification = Notification(
+                title=f"Device {device.name} disconnected",
+                message=f"Device {device.name} ({office.name}) disconnected normally.",
+                type=NotificationType.INFO,
+                device_id=device.id,
+            )
+            notification = await self.create_notification(notification)
+            await self.event_bus.publish(BroadcastMessage(
+                method="notification",
+                params=notification.model_dump(exclude_none=True),
+            ))
+        except Exception as e:
+            logger.error(f"Error handling device disconnected event: {e}")
+
+    async def _handle_notification_event(self, event: NotificationEvent):
+        try:
+            notification = await self.create_notification(event.notification)
+            await self.event_bus.publish(BroadcastMessage(
+                method="notification",
+                params=notification.model_dump(exclude_none=True),
+            ))
+        except Exception as e:
+            logger.error(f"Error handling notification event: {e}")

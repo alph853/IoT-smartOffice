@@ -10,6 +10,7 @@ from app.services import *
 from app.infra.event_bus import InProcEventBus
 from app.infra.postgres.db import PostgreSQLConnection
 from app.infra.postgres import *
+from app.infra.mocks import *
 from app.infra.aiohttp import *
 from app.infra.thingsboard import *
 from app.config import Config
@@ -66,10 +67,13 @@ async def lifespan(app: FastAPI):
     # ------------------- Initialize Repositories -------------------
     # ---------------------------------------------------------------
 
+    # device_repository       = MockDeviceRepository()
+    # notification_repository = MockNotificationRepository()
+    # office_repository       = MockOfficeRepository()
+
     device_repository       = PostgresDeviceRepository(db)
     notification_repository = PostgresNotificationRepository(db)
     office_repository       = PostgresOfficeRepository(db)
-
 
     # ---------------------------------------------------------------
     # --------------------- Initialize services ---------------------
@@ -78,10 +82,12 @@ async def lifespan(app: FastAPI):
     device_service          = DeviceService(event_bus, device_repository, thingsboard_client)
     broadcast_service       = BroadcastService(event_bus, thingsboard_client, device_repository)
     notification_service    = NotificationService(event_bus, notification_repository, office_repository)
+    office_service          = OfficeService(office_repository, device_repository)
 
     app.state.device_service       = device_service
     app.state.broadcast_service    = broadcast_service
     app.state.notification_service = notification_service
+    app.state.office_service       = office_service
 
     # ---------------------------------------------------------------
     # ------------------- Start background tasks --------------------
@@ -90,20 +96,21 @@ async def lifespan(app: FastAPI):
     await device_service.start()
     await notification_service.start()
     await broadcast_service.start()
+    await office_service.start()
 
     yield
-
 
     # ----------------- Shutdown -----------------
     await device_service.stop()
     await notification_service.stop()
     await broadcast_service.stop()
+    await office_service.stop()
 
     await thingsboard_client.disconnect()
     await http_client.disconnect()
 
 
-app = FastAPI(title="YoloFarm API", lifespan=lifespan)
+app = FastAPI(title="SmartOffice API", lifespan=lifespan)
 
 
 # Configure CORS
@@ -118,12 +125,13 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-    return {"message": "Welcome to YoloFarm API", "version": "1.0.0"}
+    return {"message": "Welcome to SmartOffice API", "version": "1.0.0"}
 
 
 app.include_router(device_router)
 app.include_router(ws_router)
-
+app.include_router(office_router)
+app.include_router(notification_router)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

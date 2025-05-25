@@ -4,6 +4,7 @@ from app.domain.repositories import NotificationRepository
 from app.domain.models import Notification
 from app.infra.postgres.db import PostgreSQLConnection
 from app.infra.postgres.scripts.sql_notification import *
+from loguru import logger
 
 
 class PostgresNotificationRepository(NotificationRepository):
@@ -12,21 +13,25 @@ class PostgresNotificationRepository(NotificationRepository):
 
     async def get_all_notifications(self) -> List[Notification]:
         async with self.db.pool.acquire() as conn:
-            query = GET_ALL_NOTIFICATIONS
+            query = GET_ALL_NOTIFICATION
             result = await conn.fetch(query)
             return [Notification(**row) for row in result]
 
     async def create_notification(self, notification: Notification) -> Notification:
-        async with self.db.pool.acquire() as conn:
-            query = NOTIFICATION_CREATE
-            result = await conn.fetch(query,
-                                      notification.title,
-                                      notification.message,
-                                      notification.type,
-                                      notification.device_id,
-                                      notification.ts,
-                                      notification.read_status)
-            return Notification(**result[0])
+        try:
+            async with self.db.pool.acquire() as conn:
+                query = NOTIFICATION_CREATE
+                result = await conn.fetch(query,
+                                        notification.title,
+                                        notification.message,
+                                        notification.type,
+                                        notification.device_id,
+                                        notification.read_status)
+                notification.id = result[0]['id']
+                return notification
+        except Exception as e:
+            logger.error(f"Error creating notification: {e}")
+            return None
 
     async def get_notification_by_id(self, notification_id: str) -> Notification | None:
         async with self.db.pool.acquire() as conn:
@@ -36,7 +41,7 @@ class PostgresNotificationRepository(NotificationRepository):
 
     async def get_unread_notifications(self) -> List[Notification]:
         async with self.db.pool.acquire() as conn:
-            query = GET_UNREAD_NOTIFICATIONS
+            query = GET_UNREAD_NOTIFICATION
             result = await conn.fetch(query)
             return [Notification(**row) for row in result]
 

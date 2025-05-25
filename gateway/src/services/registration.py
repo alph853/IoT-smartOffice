@@ -32,9 +32,9 @@ class RegistrationService:
 
     async def handle_register_request(self, event: RegisterRequestEvent):
         try:
+            self.cloud_client.connect_device(event.device.name),
             event.device.gateway_id = self.gateway_id
             device = await self.http_client.connect_device(event.device)
-            self.cloud_client.connect_device(device),
             tasks = await asyncio.gather(
                 self.cache_client.add_device(device),
                 self.gw_client.register_device(device),

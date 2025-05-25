@@ -49,16 +49,12 @@ class DeviceService:
         else:
             device = await self.create_device(device_registration, return_components)
 
-        # Get sensors and actuators if requested
-        if return_components:
-            device.sensors = await self.device_repo.get_sensors_by_device_id(device.id)
-            device.actuators = await self.device_repo.get_actuators_by_device_id(device.id)
-
-        self.event_bus.publish(DeviceConnectedEvent(device=device))
+        await self.event_bus.publish(DeviceConnectedEvent(device=device))
         return device
 
     async def create_device(self, device_registration: DeviceRegistration, return_components: bool = False) -> Device:
         """Only used for testing at server side. Device registration is done via MQTT client."""
+        device_registration.device_id = await self.cloud_client.get_client_id(device_registration.name)
         device = await self.device_repo.create_device(device_registration)
         if return_components:
             device.sensors = await self.device_repo.get_sensors_by_device_id(device.id)
@@ -70,26 +66,31 @@ class DeviceService:
         if device and return_components:
             device.sensors = await self.device_repo.get_sensors_by_device_id(device.id)
             device.actuators = await self.device_repo.get_actuators_by_device_id(device.id)
+        if device:
+            device.id = device_id
         return device
 
     async def delete_all_devices(self) -> bool:
-        success = True
-        all_devices = await self.device_repo.get_devices()
-        if await self.device_repo.delete_all_devices():
-            for device in all_devices:
-                response = await self.cloud_client.delete_device(device.id)
-                success = success and response.status == "success"
-        return success
+        try:
+            all_devices = await self.device_repo.get_devices()
+            if await self.device_repo.delete_all_devices():
+                for device in all_devices:
+                    asyncio.create_task(self._cleanup_cloud_device(device))
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting all devices: {e}")
+            return False
 
     async def delete_device(self, device_id: int) -> bool:
-        device = await self.device_repo.get_device_by_id(device_id)
-        if device:
-            if await self.device_repo.delete_device(device_id):
-                response = await self.cloud_client.delete_device(device_id)
-                if response.status == "success":
-                    await self.event_bus.publish(DeviceDisconnectedEvent(device=device))
-                    return True
-        return False
+        try:
+            device = await self.device_repo.get_device_by_id(device_id)
+            if device:
+                if await self.device_repo.delete_device(device_id):
+                    asyncio.create_task(self._cleanup_cloud_device(device))
+                return True
+        except Exception as e:
+            logger.error(f"Error deleting device {device_id}: {e}")
+            return False
 
     async def disable_device(self, device_id: int) -> bool:
         updated_device = DeviceUpdate(status=DeviceStatus.DISABLED)
@@ -117,3 +118,10 @@ class DeviceService:
     async def get_all_actuators(self) -> List[Actuator]:
         return await self.device_repo.get_all_actuators()
 
+    async def _cleanup_cloud_device(self, device: Device):
+        try:
+            response = await self.cloud_client.delete_device(device.id, device.device_id)
+            if response.status == "success":
+                await self.event_bus.publish(DeviceDisconnectedEvent(device=device))
+        except Exception as e:
+            logger.error(f"Error cleaning up device {device.id} from cloud: {e}")

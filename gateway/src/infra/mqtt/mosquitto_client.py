@@ -6,7 +6,7 @@ import asyncio
 import json
 from typing import Dict, Any
 
-from src.domain.models import DeviceRegistration, Device
+from src.domain.models import DeviceRegistration, Device, Actuator, DeviceMode
 from src.domain.repositories import MqttGatewayClientRepository, CacheClientRepository
 from src.domain.events import (
     EventBusInterface, RegisterRequestEvent, TelemetryEvent, ControlResponseEvent,
@@ -27,8 +27,13 @@ class MosquittoClient(MqttGatewayClientRepository):
         self.event_bus   = event_bus
         self.cache_client = cache_client
         self.topics      = topics
-        self.pending_requests = {}  # Dictionary to store pending request futures
+
+        self.pending_requests = {}
         self.client = None
+        self.handlers = {
+            TestEvent: self._handle_test_connection,
+            InvalidMessageEvent: self._handle_invalid_message,
+        }
 
 
     # -------------------------------------------------------------
@@ -59,13 +64,13 @@ class MosquittoClient(MqttGatewayClientRepository):
     async def register_device(self, device: Device):
         topics = "telemetry", "control_response"
         topics_info = [self.topics[topic] for topic in topics]
+        print(f"Subscribing to {len(topics_info)} topics: \n{'\n'.join([t['topic'] + str(device.id) for t in topics_info])}")
         subscription_tasks = [
             self.client.subscribe(topic=(topic['topic'] + str(device.id), topic['retain']), qos=topic['qos'])
             for topic in topics_info
         ]
         await asyncio.gather(*subscription_tasks)
 
-        # Prepare response with device ID and component IDs
         response_data = {
             "status": "OK",
             "device_id": device.id,
@@ -73,39 +78,39 @@ class MosquittoClient(MqttGatewayClientRepository):
             "actuators": [{"name": actuator.name, "id": i} for i, actuator in enumerate(device.actuators)] if device.actuators else []
         }
 
-        topic = self.topics['register_response']['topic'].format(device_id=device.mac_addr)
+        topic = self.topics['register_response']['topic'].format(device_id=device.mac_addr.replace(":", ""))
         logger.info(f"Registering device {device.id} to topic {topic}")
         await self.client.publish(topic, json.dumps(response_data))
 
-    async def connect_device(self, device: Device):
+    async def connect_device(self, device_id: int):
         topics = "telemetry", "control_response"
         topics_info = [self.topics[topic] for topic in topics]
         subscription_info = [{
-                "topic": topic['topic'] + str(device.id),
+                "topic": topic['topic'] + str(device_id),
                 "qos": topic['qos'],
                 "retain": topic['retain']
             } for topic in topics_info
         ]
         await self._subscribe_topics(subscription_info)
 
-        logger.info(f"Connected device {device.id}")
+        logger.info(f"Connected device {device_id}")
 
-    async def disconnect_device(self, device: Device):
+    async def disconnect_device(self, device_id: int):
         topics = "telemetry", "control_response"
         topics_info = [self.topics[topic] for topic in topics]
-        topics = [topic['topic'] + str(device.id) for topic in topics_info]
+        topics = [topic['topic'] + str(device_id) for topic in topics_info]
         await self._unsubscribe_topics(topics)
 
-        logger.info(f"Disconnected device {device.id}")
+        logger.info(f"Disconnected device {device_id}")
 
     async def set_lighting(self, event: SetLightingEvent) -> bool:
         payload = {
             "method": "setLighting",
             "params": event.model_dump()
         }
-        device_id = self.cache_client.get_device_id_by_actuator_id(event.actuator_id)
+        device_id = await self.cache_client.get_device_id_by_actuator_id(event.actuator_id)
         if device_id:
-            topic = self.topics['rpc_request']['topic'] + str(device_id)
+            topic = self.topics['control_commands']['topic'].format(device_id=device_id)
             await self.client.publish(topic, json.dumps(payload))
             return await self._wait_for_response(event.request_id)
         return False
@@ -115,10 +120,10 @@ class MosquittoClient(MqttGatewayClientRepository):
             "method": "setFanState",
             "params": event.model_dump()
         }
-        device_id = self.cache_client.get_device_id_by_actuator_id(event.actuator_id)
+        device_id = await self.cache_client.get_device_id_by_actuator_id(event.actuator_id)
         if not device_id:
             return False
-        topic = self.topics['rpc_request']['topic'] + str(device_id)
+        topic = self.topics['control_commands']['topic'].format(device_id=device_id)
         await self.client.publish(topic, json.dumps(payload))
         return await self._wait_for_response(event.request_id)
 
@@ -127,10 +132,10 @@ class MosquittoClient(MqttGatewayClientRepository):
             "method": "test",
             "params": event.model_dump()
         }
-        device_id = self.cache_client.get_device_id_by_actuator_id(event.actuator_id)
+        device_id = await self.cache_client.get_device_id_by_actuator_id(event.actuator_id)
         if not device_id:
             return False
-        topic = self.topics['rpc_request']['topic'] + str(device_id)
+        topic = self.topics['control_commands']['topic'] + str(device_id)
         await self.client.publish(topic, json.dumps(payload))
         return await self._wait_for_response(event.request_id)
 
@@ -161,42 +166,43 @@ class MosquittoClient(MqttGatewayClientRepository):
         payload = msg.payload.decode()
 
         logger.info(f"Received message on topic {topic}: {payload}")
-
-        if topic.startswith(self.topics['test']['topic']):
-            event = TestEvent(payload=payload)
-            await self.event_bus.publish(event)
-            return
         try:
-            payload = json.loads(payload)
-        except Exception:
-            event = InvalidMessageEvent(topic=str(topic), payload=payload, error="JSON parsing error")
-        else:
-            if topic.startswith(self.topics['register_request']['topic']):
+            try:    payload = json.loads(payload)
+            except: payload = payload
+
+            if topic.startswith(self.topics['test']['topic']):
+                event = TestEvent(payload=payload)
+            elif topic.startswith(self.topics['register_request']['topic']):
                 event = RegisterRequestEvent(device=DeviceRegistration(**payload))
             elif topic.startswith(self.topics['telemetry']['topic']):
                 device_id = topic.split('/')[-1]
                 event = TelemetryEvent(device_id=device_id, data=payload)
             elif topic.startswith(self.topics['control_response']['topic']):
-                event = ControlResponseEvent(**payload)
-                # Check if this is a response we're waiting for
+                event = None
                 request_id = payload.get('request_id')
                 if request_id and request_id in self.pending_requests:
+                    print(self.pending_requests)
                     future = self.pending_requests[request_id]
                     if not future.done():
                         if payload.get('status') == 'success':
                             future.set_result(True)
                         else:
                             future.set_result(False)
+                    else:
+                        print(222)
             else:
                 event = InvalidMessageEvent(topic=str(topic), payload=str(payload), error="Not implemented error")
+        except Exception as e:
+            event = InvalidMessageEvent(topic=str(topic), payload=str(payload), error=str(e))
         finally:
-            await self.event_bus.publish(event)
+            if event:
+                await self.event_bus.publish(event)
 
     async def _handle_test_connection(self, event: TestEvent):
         logger.info(f'Received test message on "{event.payload}"')
 
     async def _handle_invalid_message(self, event: InvalidMessageEvent):
-        logger.error(f'Received invalid message on "{event.topic}": "{event.payload}"')
+        logger.error(f'Received invalid message on "{event.topic}": "{event.payload}\nError:{event.error}"')
 
 
     # -------------------------------------------------------------
@@ -218,7 +224,7 @@ class MosquittoClient(MqttGatewayClientRepository):
         devices = await self.cache_client.get_all_devices()
         for device in devices:
             if device.status == "online":
-                await self.connect_device(device)
+                await self.connect_device(device.id)
 
         subscribed_topics = ["test", "register_request",]
         subscribed_topic_info = [self.topics[topic] for topic in subscribed_topics]
@@ -227,8 +233,9 @@ class MosquittoClient(MqttGatewayClientRepository):
         logger.info(f"Subscribed to {len(subscribed_topics)} topics:\n'{'\n'.join([t['topic'] for t in subscribed_topic_info])}'")
         logger.info(f"Mosquitto broker connected at {self.broker_url}:{self.broker_port}.")
 
-        await self.event_bus.subscribe(TestEvent, self._handle_test_connection)
-        await self.event_bus.subscribe(InvalidMessageEvent, self._handle_invalid_message)
+        await asyncio.gather(
+            *[self.event_bus.subscribe(event, handler) for event, handler in self.handlers.items()]
+        )
         self._listener_task = asyncio.create_task(self._listen())
 
     async def _subscribe_topics(self, subscribed_topic_info: List[Dict[str, Any]]):
@@ -249,7 +256,7 @@ class MosquittoClient(MqttGatewayClientRepository):
         self.pending_requests[request_id] = response_future
 
         try:
-            result = await asyncio.wait_for(response_future, timeout=2.0)
+            result = await asyncio.wait_for(response_future, timeout=8.0)
             return result
         except asyncio.TimeoutError:
             logger.warning(f"Timeout waiting for response to request {request_id}")

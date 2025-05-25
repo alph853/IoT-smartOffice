@@ -1,12 +1,11 @@
 import asyncio
 from dependency_injector import containers, providers
 
+from src.services import *
+
 from src.infra.event_bus import InProcEventBus
 from src.infra.mqtt import ThingsboardClient, MosquittoClient
 from src.infra.scheduler import APScheduler
-from src.services.registration import RegistrationService
-from src.services.telemetry import TelemetryService
-
 from src.infra.http import HttpClient
 from src.infra.redis import RedisCacheClient
 
@@ -28,6 +27,7 @@ class Container(containers.DeclarativeContainer):
         port=config.redis.port.as_int(),
         db=config.redis.db.as_int(),
         http_client=http_client,
+        event_bus=event_bus,
     )
     mosquitto_client = providers.Singleton(
         MosquittoClient,
@@ -68,6 +68,13 @@ class Container(containers.DeclarativeContainer):
     telemetry_service = providers.Singleton(
         TelemetryService,
         event_bus=event_bus,
+        cache_client=cache_client,
+        cloud_client=thingsboard_client,
+    )
+    control_service = providers.Singleton(
+        ControlService,
+        event_bus=event_bus,
+        gw_client=mosquitto_client,
         cache_client=cache_client,
         cloud_client=thingsboard_client,
     )

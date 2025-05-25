@@ -4,6 +4,8 @@ import websockets
 from typing import Dict, Any, Tuple
 from loguru import logger
 from websockets.client import ClientConnection
+import urllib.parse
+
 
 from app.domain.events import EventBusInterface
 from app.domain.repositories import MqttCloudClientRepository, HttpClientRepository
@@ -45,7 +47,7 @@ class ThingsboardClient(MqttCloudClientRepository):
 
     async def connect(self):
         self._jwt = await self._get_jwt()
-        self._rpc_api = self._get_url_from_api(self.api.rpc)
+        self._rpc_api = self._get_url_from_api(self.api.rpc.format(device_id=self.device_id))
         self.headers = self._get_headers_with_jwt()
         self._ws_listener_task = asyncio.create_task(self._thingsboard_ws_listener())
         logger.info(f"Thingsboard WS connected!")
@@ -89,6 +91,13 @@ class ThingsboardClient(MqttCloudClientRepository):
     # ----------------------------- RPC ---------------------------
     # -------------------------------------------------------------
 
+    async def get_client_id(self, device_name: str) -> str:
+        logger.info(f"Getting client ID for device {device_name}")
+        encoded_name = urllib.parse.quote(device_name)
+        url = self._get_url_from_api(self.api.get_client_id.format(device_name=encoded_name))
+        resp = await self.http_client.request(url, method="GET", headers=self.headers)
+        return resp["id"]["id"]
+
     async def send_rpc_command(self, request: Dict[str, Any]) -> RPCResponse:
         logger.info(f"Sending RPC command: {request}")
         url = self._rpc_api
@@ -97,8 +106,6 @@ class ThingsboardClient(MqttCloudClientRepository):
 
     async def set_lighting(self, lighting_set: LightingSet) -> RPCResponse:
         logger.info(f"Setting lighting: {lighting_set}")
-        if type(lighting_set.color) == str:
-            lighting_set.color = COLOR_MAP[lighting_set.color.value]
         url = self._rpc_api
         resp = await self.http_client.request(url, payload=lighting_set.model_dump(), method="POST", headers=self.headers)
         return RPCResponse(**resp)
@@ -109,7 +116,14 @@ class ThingsboardClient(MqttCloudClientRepository):
         resp = await self.http_client.request(url, payload=fan_state_set.model_dump(), method="POST", headers=self.headers)
         return RPCResponse(**resp)
 
-    async def delete_device(self, device_id: int) -> RPCResponse:
+    async def delete_device(self, device_id: int, cloud_device_id: str) -> RPCResponse:
+        try:
+            url = self._get_url_from_api(self.api.delete_device.format(device_id=cloud_device_id))
+            resp = await self.http_client.request(url, method="DELETE", headers=self.headers)
+        except Exception as e:
+            logger.error(f"Error deleting device: {e}")
+            return RPCResponse(status="error", data={"message": str(e)})
+
         logger.info(f"Deleting device {device_id}")
         url = self._rpc_api
         payload = {
@@ -128,7 +142,7 @@ class ThingsboardClient(MqttCloudClientRepository):
             "method": "updateDevice",
             "params": {
                 "device_id": device_id,
-                "device_update": device_update.model_dump()
+                "device_update": device_update.model_dump(exclude_unset=True)
             }
         }
         resp = await self.http_client.request(url, payload=payload, method="POST", headers=self.headers)
@@ -141,7 +155,7 @@ class ThingsboardClient(MqttCloudClientRepository):
             "method": "updateActuator",
             "params": {
                 "actuator_id": actuator_id,
-                "actuator_update": actuator_update.model_dump()
+                "actuator_update": actuator_update.model_dump(exclude_unset=True)
             }
         }
         resp = await self.http_client.request(url, payload=payload, method="POST", headers=self.headers)
@@ -167,7 +181,7 @@ class ThingsboardClient(MqttCloudClientRepository):
             raise Exception(f"Connection error while authenticating: {str(e)}")
 
     def _get_url_from_api(self, api: str):
-        return "https://" + self.broker_url + api.format(device_id=self.device_id)
+        return "https://" + self.broker_url + api
 
     def _get_headers_with_jwt(self):
         return {

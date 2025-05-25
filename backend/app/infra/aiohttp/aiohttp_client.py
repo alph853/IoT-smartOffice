@@ -26,8 +26,13 @@ class AiohttpClient(HttpClientRepository):
         async with self.session.request(method, url, json=payload, headers=headers, params=params) as response:
             try:
                 response.raise_for_status()
-                return await response.json()
+                if response.content_length == 0 or method == "DELETE":
+                    return None
+                data = await response.json()
+                return data
             except ContentTypeError:
+                if response.status < 400:
+                    return None
                 text = await response.text()
                 raise Exception(f"HTTP response not JSON: {text}")
             except ClientResponseError as e:

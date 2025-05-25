@@ -5,7 +5,7 @@ import paho.mqtt.client as mqtt
 import uuid
 
 # MQTT broker settings
-BROKER_URL = "192.168.1.177"
+BROKER_URL = "192.168.1.164"
 BROKER_PORT = 1883
 
 # Topics
@@ -15,40 +15,32 @@ TELEMETRY_TOPIC = "gateway/telemetry/{device_id}"
 # Device registration payload
 device_mac = f"AA:BB:CC:{uuid.uuid4().hex[:6].upper()}"
 # device_mac = f"AA:BB:CC"
+# device_mac = f"CC:BA:97:0D:E2:44"
 device_id = None
 
 # Sample device registration payload
 registration_payload = {
-    "name": "Test Device",
+    "name": "Test Device Another Office",
     "mac_addr": device_mac,
     "fw_version": "1.0.0",
     "model": "Test_Model",
     "description": "A test device for registration",
-    "office_id": 1,
+    "office_id": 3,
     "sensors": [
         {
-            "name": "Temperature Sensor",
+            "name": "DHT20",
             "description": "Measures ambient temperature",
-            "unit": "°C",
-            "type": "Temperature"
+            "type": "dht20"
         },
-        {
-            "name": "Humidity Sensor",
-            "description": "Measures relative humidity",
-            "unit": "%",
-            "type": "Humidity"
-        }
     ],
     "actuators": [
         {
             "name": "LED Light",
-            "description": "RGB LED indicator",
-            "type": "Lighting"
+            "type": "rgb"
         },
         {
-            "name": "Buzzer",
-            "description": "Sound notification",
-            "type": "Audio"
+            "name": "Fan",
+            "type": "fan"
         }
     ]
 }
@@ -57,8 +49,8 @@ registration_payload = {
 def on_connect(client, userdata, flags, rc):
     print(f"Connected with result code {rc}")
     # Subscribe to the response topic using wildcard
-    client.subscribe(f"gateway/register/response/{device_mac}")
-    
+    client.subscribe(f"gateway/register/response/{device_mac.replace(':', '')}")
+
     # Publish the registration request
     print("Publishing device registration request...")
     client.publish(
@@ -69,13 +61,26 @@ def on_connect(client, userdata, flags, rc):
     print(f"Request published for device: {device_mac}")
 
 def on_message(client, userdata, msg):
+    global device_id
     print(f"Received message on topic: {msg.topic}")
     try:
         payload = msg.payload.decode()
-        if payload.startswith("OK,id="):
-            global device_id
-            device_id = payload.split("=")[1]
+        payload = json.loads(payload)
+
+        if msg.topic.startswith(f"gateway/register/response/{device_mac.replace(':', '')}"):
+            device_id = payload.get("device_id")
             print(f"Device ID: {device_id}")
+            # Subscribe to control commands after getting device_id
+            client.subscribe(f"gateway/control/commands/{device_id}")
+            return
+
+        if device_id and msg.topic.startswith(f"gateway/control/commands/{device_id}"):
+            print(f"Control command: {payload}")
+            client.publish(
+                f"gateway/control/response/{device_id}",
+                json.dumps({"status": "success", "request_id": payload.get("request_id")}),
+                qos=1
+            )
         else:
             print(f"Error: {payload}")
     except Exception as e:
@@ -99,16 +104,17 @@ try:
     while True:
         if not device_id:
             time.sleep(5)
-        else:
-            client.publish(
-                TELEMETRY_TOPIC.format(device_id=device_id),
-                json.dumps({"temperature": temp, "humidity": humidity}),
-                qos=1,
-                retain=True
-            )
-            time.sleep(2)
-            temp += 1
-            humidity += 1
+            continue
+
+        client.publish(
+            TELEMETRY_TOPIC.format(device_id=device_id),
+            json.dumps({"temperature": temp, "humidity": humidity}),
+            qos=1,
+            retain=True
+        )
+        time.sleep(2)
+        temp += 1
+        humidity += 1
 except KeyboardInterrupt:
     print("Script interrupted by user")
-    client.disconnect() 
+    client.disconnect()

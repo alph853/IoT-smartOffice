@@ -48,10 +48,13 @@ async def lifespan(container: Container):
 
     registration_service = container.registration_service()
     telemetry_service    = container.telemetry_service()
+    control_service      = container.control_service()
     # auto_dispatcher      = container.auto_dispatcher()
 
     await registration_service.start()
     await telemetry_service.start()
+    await control_service.start()
+
 
     # --------
     yield

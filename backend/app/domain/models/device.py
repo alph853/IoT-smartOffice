@@ -44,6 +44,7 @@ class Actuator(BaseModel):
     type: str | None = None
     device_id: int | None = None
     mode: DeviceMode = DeviceMode.MANUAL
+    setting: dict | None = None
 
     class Config:
         use_enum_values = True
@@ -51,8 +52,8 @@ class Actuator(BaseModel):
 
 class ActuatorUpdate(BaseModel):
     mode: DeviceMode | None = None
-    name: str | None = None
-    type: str | None = None
+    setting: dict | None = None
+
 
     class Config:
         use_enum_values = True
@@ -77,6 +78,7 @@ class DeviceRegistration(BaseModel):
     description: str | None = None
     sensors: List[Sensor]
     actuators: List[Actuator]
+    device_id: str | None = None
 
 
 class Device(BaseModel):
@@ -94,6 +96,8 @@ class Device(BaseModel):
     access_token: str | None = None
     sensors: List[Sensor] | None = None
     actuators: List[Actuator] | None = None
+    thingsboard_name: str | None = None
+    device_id: str
 
     class Config:
         use_enum_values = True
@@ -109,6 +113,9 @@ class DeviceUpdate(BaseModel):
     status: DeviceStatus | None = None
     access_token: str | None = None
     last_seen_at: datetime | None = None
+
+    actuators: List[Actuator] | None = None
+    sensors: List[Sensor] | None = None
 
     class Config:
         use_enum_values = True

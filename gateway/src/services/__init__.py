@@ -1,6 +1,6 @@
 from .registration import RegistrationService
 from .telemetry import TelemetryService
-from .auto_dispatcher import AutoDispatcherService
+from .control_service import ControlService
 
 
-__all__ = ["RegistrationService", "TelemetryService", "AutoDispatcherService"]
+__all__ = ["RegistrationService", "TelemetryService", "ControlService"]
