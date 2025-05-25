@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.example.iot.domain.models.MCU
 import com.example.iot.R
+import android.view.animation.AnimationUtils
 
 class NavigationBar(private val activity: AppCompatActivity) {
 
@@ -64,6 +65,11 @@ class NavigationBar(private val activity: AppCompatActivity) {
         // Update UI state
         updateNavItemState(selectedNavIndex, false)
         updateNavItemState(index, true)
+        
+        // Animate icon scale
+        val icon = navItems[index].findViewById<ImageView>(R.id.icon)
+        val anim = AnimationUtils.loadAnimation(activity, R.anim.icon_scale)
+        icon.startAnimation(anim)
         
         // Update selected index
         selectedNavIndex = index

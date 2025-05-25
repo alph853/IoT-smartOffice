@@ -24,7 +24,7 @@ import java.net.URL
 import javax.net.ssl.HttpsURLConnection
 import java.text.SimpleDateFormat
 import java.util.*
-
+import androidx.fragment.app.Fragment
 
 import com.example.iot.domain.models.Room
 import com.example.iot.domain.managers.RoomManager
@@ -348,10 +348,20 @@ class MainActivity : AppCompatActivity() {
             }
 
             // Replace the fragment
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, fragment)
-                .commit()
+            loadFragment(fragment)
         }
+    }
+
+    private fun loadFragment(fragment: Fragment) {
+        supportFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                R.anim.fade_in,
+                R.anim.fade_out,
+                R.anim.fade_in,
+                R.anim.fade_out
+            )
+            .replace(R.id.fragment_container, fragment)
+            .commit()
     }
 
     private fun onMenuAdd() {
