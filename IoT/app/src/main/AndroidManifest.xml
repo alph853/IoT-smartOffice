@@ -29,6 +29,9 @@
         <activity
             android:name=".MCUDetailActivity"
             android:exported="false" />
+        <activity
+            android:name=".NotificationDetailActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

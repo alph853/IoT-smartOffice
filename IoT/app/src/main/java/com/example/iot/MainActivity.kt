@@ -22,6 +22,8 @@ import com.google.gson.reflect.TypeToken
 import java.io.InputStreamReader
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -38,7 +40,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         fetchRoomData().start()
-        Log.d("onCreate", "Started fetchRoomData")
+        fetchNotificationData().start()
+        Log.d("onCreate", "Started fetchRoomData and fetchNotificationData")
 
         // Apply window insets properly
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -189,6 +192,98 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     tvActiveCount.text = "Network error"
                     Log.e("fetchRoomData", "Exception: ${e.message}", e)
+                }
+            }
+        }
+    }
+
+    private fun fetchNotificationData(): Thread {
+        return Thread {
+            try {
+                val url = URL("https://10diemiot.ngrok.io/notifications/")
+                val conn = url.openConnection() as HttpsURLConnection
+
+                if(conn.responseCode == 200) {
+                    val inputStream = conn.inputStream
+                    val reader = InputStreamReader(inputStream)
+                    val json = reader.readText()
+                    Log.d("fetchNotificationData", json)
+
+                    // Parse JSON and create Notification objects
+                    val gson = Gson()
+                    
+                    // Create a temporary data class for JSON parsing without iconRes
+                    data class NotificationJson(
+                        val id: Int,
+                        val message: String,
+                        val read_status: Boolean,
+                        val type: String,
+                        val title: String,
+                        val device_id: Int,
+                        val ts: String
+                    )
+                    
+                    val notificationListType = object : TypeToken<List<NotificationJson>>() {}.type
+                    val notificationsJson: List<NotificationJson> = gson.fromJson(json, notificationListType)
+
+                    // Clear existing notifications and add new ones
+                    runOnUiThread {
+                        NotificationManager.clearNotifications()
+
+                        notificationsJson.forEach { notificationJson ->
+                            // Set appropriate icon based on notification type
+                            val iconRes = when (notificationJson.type.lowercase()) {
+                                "alert", "warning" -> R.drawable.ic_warning
+                                "device" -> R.drawable.ic_device
+                                "system" -> R.drawable.ic_settings
+                                "reminder" -> R.drawable.ic_reminder
+                                "info" -> R.drawable.ic_info
+                                else -> R.drawable.ic_notifications
+                            }
+                            
+                            // Format timestamp from "2025-05-24T09:58:42.605417Z" to "09:58 24-05-2025"
+                            val formattedTime = try {
+                                val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", Locale.getDefault())
+                                inputFormat.timeZone = TimeZone.getTimeZone("UTC")
+                                val date = inputFormat.parse(notificationJson.ts)
+                                val outputFormat = SimpleDateFormat("HH:mm dd-MM-yyyy", Locale.getDefault())
+                                outputFormat.format(date ?: Date())
+                            } catch (e: Exception) {
+                                Log.e("fetchNotificationData", "Error parsing timestamp: ${notificationJson.ts}", e)
+                                notificationJson.ts // Fallback to original timestamp
+                            }
+
+                            // Create Notification object with icon
+                            val notification = Notification(
+                                id = notificationJson.id,
+                                message = notificationJson.message,
+                                read_status = notificationJson.read_status,
+                                type = notificationJson.type,
+                                title = notificationJson.title,
+                                device_id = notificationJson.device_id,
+                                ts = formattedTime,
+                                iconRes = iconRes
+                            )
+                            
+                            NotificationManager.addNotification(notification)
+                            Log.d("fetchNotificationData", "Added notification: ${notification.title} (ID: ${notification.id}, Type: ${notification.type})")
+                        }
+                        
+                        Log.d("fetchNotificationData", "Total notifications loaded: ${NotificationManager.getNotificationCount()}")
+                        Log.d("fetchNotificationData", "Unread notifications: ${NotificationManager.getUnreadCount()}")
+                    }
+
+                    reader.close()
+                    inputStream.close()
+                }
+                else {
+                    runOnUiThread {
+                        Log.e("fetchNotificationData", "HTTP Error: ${conn.responseCode}")
+                    }
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    Log.e("fetchNotificationData", "Exception: ${e.message}", e)
                 }
             }
         }

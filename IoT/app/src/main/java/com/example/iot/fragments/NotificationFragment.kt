@@ -12,6 +12,9 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.iot.fragments.ControlFragment
+import com.example.iot.NotificationManager
+import com.example.iot.NotificationDetailActivity
+import android.content.Intent
 import com.google.android.material.tabs.TabLayout
 
 class NotificationFragment : Fragment() {
@@ -63,8 +66,15 @@ class NotificationFragment : Fragment() {
     private fun setupRecyclerView(view: View) {
         recyclerView = view.findViewById(R.id.recycler_notifications)
         adapter = NotificationAdapter(
-            onItemClick = { notification -> viewModel.toggleRead(notification) },
-            onItemLongClick = { notification -> viewModel.toggleRead(notification) },
+            onItemClick = { notification -> 
+                // Mark as read and navigate to detail
+                if (!notification.read_status) {
+                    viewModel.toggleRead(notification)
+                }
+                // Navigate to detail activity
+                val intent = NotificationDetailActivity.newIntent(requireContext(), notification)
+                startActivity(intent)
+            },
             onItemSwiped = { notification -> viewModel.deleteNotification(notification) }
         )
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -94,7 +104,19 @@ class NotificationFragment : Fragment() {
     }
 
     private fun loadNotifications() {
-        viewModel.loadSampleNotifications()
+        // Load real notifications from NotificationManager
+        viewModel.loadNotifications()
+        
+        // If no notifications are available, load sample data for testing
+        if (NotificationManager.getNotificationCount() == 0) {
+            viewModel.loadSampleNotifications()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh notifications when returning to this fragment
+        loadNotifications()
     }
 
     companion object {
