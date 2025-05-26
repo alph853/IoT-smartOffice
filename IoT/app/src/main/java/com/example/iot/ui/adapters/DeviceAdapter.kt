@@ -22,8 +22,21 @@ import com.example.iot.R
  * Adapter for displaying IoT devices in a grid
  */
 class DeviceAdapter(
-    private val onToggleListener: (Device, Boolean) -> Unit
-) : ListAdapter<Device, DeviceAdapter.DeviceViewHolder>(DeviceDiffCallback()) {
+    private val onToggleListener: (Device, Boolean) -> Unit,
+    private val onLED4RGBSetListener: ((Device) -> Unit)? = null
+) : ListAdapter<Device, RecyclerView.ViewHolder>(DeviceDiffCallback()) {
+
+    companion object {
+        private const val VIEW_TYPE_STANDARD = 0
+        private const val VIEW_TYPE_LED4RGB = 1
+    }
+
+    override fun getItemViewType(position: Int): Int {
+        return when (getItem(position).type) {
+            DeviceType.LED4RGB -> VIEW_TYPE_LED4RGB
+            else -> VIEW_TYPE_STANDARD
+        }
+    }
 
     /**
      * ViewHolder for device items in the grid
@@ -67,16 +80,66 @@ class DeviceAdapter(
                 }
             }
         }
+    }    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        return when (viewType) {
+            VIEW_TYPE_LED4RGB -> {
+                val view = LayoutInflater.from(parent.context).inflate(R.layout.led4rgb_card_item, parent, false)
+                LED4RGBViewHolder(view)
+            }
+            else -> {
+                val view = LayoutInflater.from(parent.context).inflate(R.layout.device_card_item, parent, false)
+                DeviceViewHolder(view)
+            }
+        }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DeviceViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.device_card_item, parent, false)
-        return DeviceViewHolder(view)
-    }
-
-    override fun onBindViewHolder(holder: DeviceViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val device = getItem(position)
-        holder.bind(device)
+        when (holder) {
+            is DeviceViewHolder -> holder.bind(device)
+            is LED4RGBViewHolder -> holder.bind(device)        }
+    }
+
+    /**
+     * ViewHolder for LED4RGB devices with clickable card
+     */
+    inner class LED4RGBViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val deviceCard: CardView = itemView.findViewById(R.id.led4rgb_card)
+        val deviceIcon: ImageView = itemView.findViewById(R.id.led4rgb_icon)
+        val deviceName: TextView = itemView.findViewById(R.id.led4rgb_name)
+        val deviceStatus: TextView = itemView.findViewById(R.id.led4rgb_status)
+        val colorPreview: View = itemView.findViewById(R.id.color_preview)
+        val setButton: Button = itemView.findViewById(R.id.set_button)
+        private var lastClickTime = 0L
+
+        fun bind(device: Device) {
+            // Set device icon
+            deviceIcon.setImageResource(device.iconResId)
+            // Set device name
+            deviceName.text = device.name
+            // Set device status
+            deviceStatus.text = if (device.isOn) "On" else "Off"
+            deviceStatus.setTextColor(
+                itemView.context.resources.getColor(
+                    if (device.isOn) android.R.color.holo_orange_light else android.R.color.darker_gray,
+                    itemView.context.theme
+                )
+            )
+            
+            // Set color preview (you can extend Device class to store current color)
+            colorPreview.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                if (device.isOn) android.graphics.Color.parseColor("#FF6B35") else android.graphics.Color.GRAY
+            )
+
+            // Set card click listener to open dialog
+            deviceCard.setOnClickListener {
+                val now = System.currentTimeMillis()
+                if (now - lastClickTime > 300) {
+                    lastClickTime = now
+                    onLED4RGBSetListener?.invoke(device)
+                }
+            }
+        }
     }
 
     /**

@@ -27,6 +27,7 @@ import com.example.iot.ui.adapters.DeviceAdapter
 import com.example.iot.R
 import com.example.iot.domain.models.MCU
 import com.example.iot.domain.models.Component
+import com.example.iot.domain.managers.WebSocketManager
 
 /**
  * ControlFragment - Displays and controls actuators from all devices (MCUs) in each room
@@ -121,19 +122,18 @@ class ControlFragment : Fragment() {
                 // Convert only actuators from all MCU devices in the room to Device objects for control
                 room.devices.forEach { mcu ->
                     // Add only actuators as controllable devices (skip sensors)
-                    mcu.actuators.forEach { actuator ->
-                        val deviceType = when (actuator.type.lowercase()) {
+                    mcu.actuators.forEach { actuator ->                        val deviceType = when (actuator.type.lowercase()) {
                             "fan" -> DeviceType.FAN
-                            "led4rgb", "led", "light", "indicator" -> DeviceType.BULB
+                            "led4rgb" -> DeviceType.LED4RGB
+                            "led", "light", "indicator" -> DeviceType.BULB
                             "lighting" -> DeviceType.CEILING_LIGHT
                             "ac", "air_conditioner" -> DeviceType.AC
                             "purifier" -> DeviceType.PURIFIER
                             else -> DeviceType.BULB
                         }
-                        
-                        val iconRes = when (actuator.type.lowercase()) {
+                          val iconRes = when (actuator.type.lowercase()) {
                             "fan" -> R.drawable.ic_fan
-                            "led4rgb" -> R.drawable.ic_bulb // We could use ic_led4rgb if it exists
+                            "led4rgb" -> R.drawable.ic_led4rgb
                             "led", "light", "indicator" -> R.drawable.ic_bulb
                             "lighting" -> R.drawable.ic_ceiling_light
                             "ac", "air_conditioner" -> R.drawable.ic_ac
@@ -160,13 +160,12 @@ class ControlFragment : Fragment() {
             roomDevicesMap.clear()
             roomsList.clear()
         }
-    }
-
-    private fun initializeThresholds() {
+    }    private fun initializeThresholds() {
         thresholds[DeviceType.FAN] = Threshold(28.0f, 26.0f, SensorType.TEMPERATURE)
         thresholds[DeviceType.AC] = Threshold(26.0f, 24.0f, SensorType.TEMPERATURE)
         thresholds[DeviceType.CEILING_LIGHT] = Threshold(50.0f, 70.0f, SensorType.LIGHT)
         thresholds[DeviceType.BULB] = Threshold(50.0f, 70.0f, SensorType.LIGHT)
+        thresholds[DeviceType.LED4RGB] = Threshold(50.0f, 70.0f, SensorType.LIGHT)
         thresholds[DeviceType.PURIFIER] = Threshold(75.0f, 50.0f, SensorType.PM25)
     }
 
@@ -179,11 +178,15 @@ class ControlFragment : Fragment() {
         modeDescription = view.findViewById(R.id.mode_description)
         thresholdContainer = view.findViewById(R.id.threshold_container)
         disabledMessage = view.findViewById(R.id.disabled_message)
-        tabLayout = view.findViewById(R.id.room_tabs)
-        // Setup RecyclerView
-        deviceAdapter = DeviceAdapter { device, isOn ->
-            onDeviceToggled(device, isOn)
-        }
+        tabLayout = view.findViewById(R.id.room_tabs)        // Setup RecyclerView
+        deviceAdapter = DeviceAdapter(
+            onToggleListener = { device, isOn ->
+                onDeviceToggled(device, isOn)
+            },
+            onLED4RGBSetListener = { device ->
+                onLED4RGBSet(device)
+            }
+        )
         devicesGrid.layoutManager = GridLayoutManager(requireContext(), 2)
         devicesGrid.adapter = deviceAdapter
         
@@ -200,6 +203,217 @@ class ControlFragment : Fragment() {
 //            }
 //        }
 //    }
+
+    private fun onLED4RGBSet(device: Device) {
+        showColorPickerDialog(device)
+    }
+    
+    // Data class to store RGB values
+    private data class RGBColor(var red: Int = 255, var green: Int = 0, var blue: Int = 0)
+
+    private fun showColorPickerDialog(device: Device) {
+        // Store colors for each LED
+        val ledColors = arrayOf(
+            RGBColor(), // LED 1 initial red
+            RGBColor(0, 255, 0), // LED 2 initial green
+            RGBColor(0, 0, 255), // LED 3 initial blue
+            RGBColor(255, 255, 255) // LED 4 initial white
+        )
+        var currentBrightness = 100
+
+        val dialog = android.app.AlertDialog.Builder(requireContext())
+            .setView(R.layout.dialog_led4rgb)
+            .create()
+
+        dialog.show()
+
+        // Get dialog views
+        val brightnessInput = dialog.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.brightness_input)
+        val color1Button = dialog.findViewById<Button>(R.id.color1_button)
+        val color2Button = dialog.findViewById<Button>(R.id.color2_button)
+        val color3Button = dialog.findViewById<Button>(R.id.color3_button)
+        val color4Button = dialog.findViewById<Button>(R.id.color4_button)
+        val btnCancel = dialog.findViewById<Button>(R.id.btn_cancel)
+        val btnConfirm = dialog.findViewById<Button>(R.id.btn_confirm)
+        
+        // Set initial brightness value and button colors
+        brightnessInput?.setText("100")
+        color1Button?.backgroundTintList = android.content.res.ColorStateList.valueOf(
+            android.graphics.Color.rgb(ledColors[0].red, ledColors[0].green, ledColors[0].blue))
+        color2Button?.backgroundTintList = android.content.res.ColorStateList.valueOf(
+            android.graphics.Color.rgb(ledColors[1].red, ledColors[1].green, ledColors[1].blue))
+        color3Button?.backgroundTintList = android.content.res.ColorStateList.valueOf(
+            android.graphics.Color.rgb(ledColors[2].red, ledColors[2].green, ledColors[2].blue))
+        color4Button?.backgroundTintList = android.content.res.ColorStateList.valueOf(
+            android.graphics.Color.rgb(ledColors[3].red, ledColors[3].green, ledColors[3].blue))
+
+        // Color picker listener for buttons
+        val showColorPicker = { button: Button, index: Int ->
+            // Create dialog with custom layout
+            val pickerDialog = android.app.AlertDialog.Builder(requireContext())
+                .setView(R.layout.dialog_rgb_picker)
+                .create()
+
+            pickerDialog.show()
+
+            // Get views from the picker dialog
+            val redInput = pickerDialog.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.red_input)
+            val greenInput = pickerDialog.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.green_input)
+            val blueInput = pickerDialog.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.blue_input)
+            val colorPreview = pickerDialog.findViewById<View>(R.id.color_preview)
+            val btnCancelRgb = pickerDialog.findViewById<Button>(R.id.btn_cancel_rgb)
+            val btnConfirmRgb = pickerDialog.findViewById<Button>(R.id.btn_confirm_rgb)
+
+            // Set initial RGB values from stored colors
+            redInput?.setText(ledColors[index].red.toString())
+            greenInput?.setText(ledColors[index].green.toString())
+            blueInput?.setText(ledColors[index].blue.toString())
+
+            // Update preview when any input changes
+            val updatePreview = {
+                try {
+                    val red = redInput?.text.toString().toIntOrNull() ?: 0
+                    val green = greenInput?.text.toString().toIntOrNull() ?: 0
+                    val blue = blueInput?.text.toString().toIntOrNull() ?: 0
+
+                    if (red in 0..255 && green in 0..255 && blue in 0..255) {
+                        val color = android.graphics.Color.rgb(red, green, blue)
+                        colorPreview?.setBackgroundColor(color)
+                    }
+                } catch (e: Exception) {
+                    // Invalid input, ignore
+                }
+            }
+
+            // Add text change listeners
+            redInput?.addTextChangedListener(object : android.text.TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: android.text.Editable?) { updatePreview() }
+            })
+
+            greenInput?.addTextChangedListener(object : android.text.TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: android.text.Editable?) { updatePreview() }
+            })
+
+            blueInput?.addTextChangedListener(object : android.text.TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: android.text.Editable?) { updatePreview() }
+            })
+
+            // Initialize color preview
+            updatePreview()
+
+            btnCancelRgb?.setOnClickListener {
+                pickerDialog.dismiss()
+            }
+
+            btnConfirmRgb?.setOnClickListener {
+                try {
+                    val red = redInput?.text.toString().toIntOrNull() ?: 0
+                    val green = greenInput?.text.toString().toIntOrNull() ?: 0
+                    val blue = blueInput?.text.toString().toIntOrNull() ?: 0
+
+                    if (red !in 0..255 || green !in 0..255 || blue !in 0..255) {
+                        Toast.makeText(requireContext(), "RGB values must be between 0 and 255", Toast.LENGTH_SHORT).show()
+                        return@setOnClickListener
+                    }
+
+                    // Save the colors
+                    ledColors[index].red = red
+                    ledColors[index].green = green
+                    ledColors[index].blue = blue
+
+                    // Update button color
+                    val color = android.graphics.Color.rgb(red, green, blue)
+                    button.backgroundTintList = android.content.res.ColorStateList.valueOf(color)
+                    pickerDialog.dismiss()
+                } catch (e: Exception) {
+                    Toast.makeText(requireContext(), "Invalid RGB values", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        // Set button click listeners with their indices
+        color1Button?.setOnClickListener { showColorPicker(color1Button, 0) }
+        color2Button?.setOnClickListener { showColorPicker(color2Button, 1) }
+        color3Button?.setOnClickListener { showColorPicker(color3Button, 2) }
+        color4Button?.setOnClickListener { showColorPicker(color4Button, 3) }
+
+        btnCancel?.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        btnConfirm?.setOnClickListener {
+            // Validate brightness input
+            val brightnessText = brightnessInput?.text?.toString()
+            if (brightnessText.isNullOrEmpty()) {
+                Toast.makeText(requireContext(), "Please enter brightness value", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            try {
+                currentBrightness = brightnessText.toInt()
+                if (currentBrightness !in 0..100) {
+                    Toast.makeText(requireContext(), "Brightness must be between 0 and 100", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+            } catch (e: NumberFormatException) {
+                Toast.makeText(requireContext(), "Invalid brightness value", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // Create the WebSocket message
+            val colors = ledColors.map { listOf(it.red, it.green, it.blue) }
+            val jsonMessage = com.google.gson.JsonObject().apply {
+                addProperty("method", "setLighting")
+                add("params", com.google.gson.JsonObject().apply {
+                    addProperty("actuator_id", device.id.split("_")[1].toInt())
+                    addProperty("brightness", currentBrightness)
+                    add("color", com.google.gson.JsonArray().apply {
+                        colors.forEach { rgbList ->
+                            add(com.google.gson.JsonArray().apply {
+                                rgbList.forEach { add(it) }
+                            })
+                        }
+                    })
+                })
+            }
+
+            // Send the message via WebSocket
+            WebSocketManager.sendMessage(jsonMessage)
+
+            // Update device state
+            val isOn = currentBrightness > 0
+            val updatedDevice = device.copy(isOn = isOn)
+            
+            // Update the device in the list
+            val devices = getDevicesForCurrentRoom().map {
+                if (it.id == device.id) updatedDevice else it
+            }
+            deviceAdapter.updateDevices(devices)
+            
+            // Update the source list
+            roomDevicesMap[currentRoom]?.clear()
+            roomDevicesMap[currentRoom]?.addAll(devices)
+            
+            // Show feedback
+            val feedbackMessage = if (isOn) {
+                val colorsStr = ledColors.mapIndexed { index, rgb -> 
+                    "L${index + 1}(${rgb.red},${rgb.green},${rgb.blue})"
+                }.joinToString(", ")
+                "LED ${device.name} set to [$colorsStr] at ${currentBrightness}% brightness"
+            } else {
+                "LED ${device.name} turned off"
+            }
+            Toast.makeText(requireContext(), feedbackMessage, Toast.LENGTH_SHORT).show()
+            
+            dialog.dismiss()
+        }
+    }
 
     private fun onDeviceToggled(device: Device, isOn: Boolean) {
         if (currentMode.value != Mode.MANUAL) return

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@android:color/background_dark"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Brightness Slider -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:textColor="@android:color/white"
+        android:text="Brightness"
+        android:textSize="16sp" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/brightness_input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:textColor="@color/white"
+            android:hint="Enter brightness (0-100)" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Color Buttons -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:textColor="@android:color/white"
+        android:text="Colors"
+        android:textSize="16sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp">
+
+        <Button
+            android:id="@+id/color1_button"
+            android:layout_width="0dp"
+            android:layout_height="48dp"            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:text="L1"
+            android:textSize="12sp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:backgroundTint="@color/card_background"
+            android:contentDescription="Choose red color"/>
+
+        <Button
+            android:id="@+id/color2_button"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
+            android:text="L2"
+            android:textSize="12sp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:backgroundTint="@color/card_background"
+            android:contentDescription="Choose green color"/>
+
+        <Button
+            android:id="@+id/color3_button"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
+            android:text="L3"
+            android:textSize="12sp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:backgroundTint="@color/card_background"
+            android:contentDescription="Choose blue color"/>
+
+        <Button
+            android:id="@+id/color4_button"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:text="L4"
+            android:textSize="12sp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:backgroundTint="@color/card_background"
+            android:contentDescription="Choose custom color"/>
+
+    </LinearLayout>
+
+    <!-- Action Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end">
+
+        <Button
+            android:id="@+id/btn_cancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:backgroundTint="@color/red"
+            android:text="Cancel"/>
+
+        <Button
+            android:id="@+id/btn_confirm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/green"
+            android:text="OK"/>
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -115,9 +115,9 @@ class NotificationFragment : Fragment() {
         viewModel.loadNotifications()
         
         // If no notifications are available, load sample data for testing
-        if (NotificationManager.getNotificationCount() == 0) {
-            viewModel.loadSampleNotifications()
-        }
+//        if (NotificationManager.getNotificationCount() == 0) {
+//            viewModel.loadSampleNotifications()
+//        }
     }
 
     override fun onResume() {

@@ -3,89 +3,100 @@ package com.example.iot.data.viewmodels
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.map
+import android.os.Handler
+import android.os.Looper
 import com.example.iot.domain.managers.NotificationManager
+import com.example.iot.data.viewmodels.Notification
 
 enum class NotificationFilter { ALL, READ, UNREAD }
 
 class NotificationViewModel : ViewModel() {
-    private val _notifications = MutableLiveData<List<Notification>>(emptyList())
-    private val _filter = MutableLiveData(NotificationFilter.ALL)
+    private val _notifications = MutableLiveData<List<Notification>>()
+    val notifications: LiveData<List<Notification>> = _notifications
 
-    val filteredNotifications: LiveData<List<Notification>> = _notifications.map { list ->
-        val filtered = when (_filter.value) {
-            NotificationFilter.READ -> list.filter { it.read_status }
-            NotificationFilter.UNREAD -> list.filter { !it.read_status }
-            else -> list
+    private val _filteredNotifications = MutableLiveData<List<Notification>>()
+    val filteredNotifications: LiveData<List<Notification>> = _filteredNotifications
+    private var currentFilter = NotificationFilter.ALL
+    
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val notificationListener: () -> Unit = {
+        // Ensure UI updates happen on the main thread
+        mainHandler.post {
+            android.util.Log.d("NotificationViewModel", "Received notification update, reloading notifications")
+            loadNotifications()
         }
-        // Sort by ID descending (newest first, assuming higher ID = newer)
-        filtered.sortedByDescending { it.id }
+    }
+
+    init {
+        // Register for notification updates
+        NotificationManager.addListener(notificationListener)
+        loadNotifications()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // Unregister listener when ViewModel is cleared
+        NotificationManager.removeListener(notificationListener)
+    }    fun loadNotifications() {
+        val allNotifications = NotificationManager.getNotifications()
+        android.util.Log.d("NotificationViewModel", "Loading ${allNotifications.size} notifications from manager")
+        _notifications.value = allNotifications
+        applyFilter()
     }
 
     fun setFilter(filter: NotificationFilter) {
-        _filter.value = filter
-        // Trigger update
-        _notifications.value = _notifications.value
+        currentFilter = filter
+        applyFilter()
     }
 
-    fun loadNotifications() {
-        _notifications.value = NotificationManager.getNotifications().toList()
-    }
-
-    fun loadSampleNotifications() {
-        _notifications.value = listOf(
-            Notification(5, "Kiểm tra thiết bị lọc không khí trong phòng họp. Bộ lọc cần được thay thế.", false, "reminder", "Nhắc nhở bảo trì", 3, "12:00 24-05-2025"),
-            Notification(4, "Hệ thống đã cập nhật thành công lên phiên bản mới nhất.", true, "system", "Cập nhật hệ thống", 0, "11:00 24-05-2025"),
-            Notification(3, "Nhiệt độ phòng khách vượt ngưỡng 30°C! Vui lòng kiểm tra hệ thống điều hòa.", false, "alert", "Cảnh báo nhiệt độ cao", 2, "10:00 24-05-2025"),
-            Notification(2, "Thiết bị cảm biến nhiệt độ DHT20 đã được thêm vào phòng 101.", false, "device", "Thiết bị mới được thêm", 1, "09:15 24-05-2025"),
-            Notification(1, "Chào mừng bạn đến với hệ thống IoT. Hệ thống đã sẵn sàng để sử dụng.", false, "info", "Welcome to IoT System!", 0, "09:00 24-05-2025")
-        )
+    private fun applyFilter() {
+        val filtered = when (currentFilter) {
+            NotificationFilter.ALL -> _notifications.value ?: emptyList()
+            NotificationFilter.READ -> _notifications.value?.filter { it.read_status } ?: emptyList()
+            NotificationFilter.UNREAD -> _notifications.value?.filter { !it.read_status } ?: emptyList()
+        }
+        _filteredNotifications.value = filtered
     }
 
     fun toggleRead(notification: Notification) {
-        // Update in NotificationManager
-        val managerNotification = NotificationManager.getNotificationByID(notification.id)
-        managerNotification?.read_status = !notification.read_status
-
-        // Update local list and force refresh
-        val updatedList = _notifications.value?.map {
-            if (it.id == notification.id) it.copy(read_status = !it.read_status) else it
+        val currentList = _notifications.value?.toMutableList() ?: mutableListOf()
+        val index = currentList.indexOfFirst { it.id == notification.id }
+        if (index != -1) {
+            val updatedNotification = notification.copy(read_status = !notification.read_status)
+            currentList[index] = updatedNotification
+            _notifications.value = currentList
+            NotificationManager.updateNotification(updatedNotification)
+            applyFilter()
         }
-        _notifications.value = updatedList?: emptyList()
-
-        // Force immediate update by triggering filter refresh
-        setFilter(_filter.value ?: NotificationFilter.ALL)
     }
 
     fun deleteNotification(notification: Notification) {
-        // Remove from NotificationManager
-        NotificationManager.removeNotificationByID(notification.id)
-
-        // Update local list
-        _notifications.value = _notifications.value?.filter { it.id != notification.id }
+        val currentList = _notifications.value?.toMutableList() ?: mutableListOf()
+        currentList.removeAll { it.id == notification.id }
+        _notifications.value = currentList
+        NotificationManager.deleteNotification(notification)
+        applyFilter()
     }
 
     fun markAllRead() {
-        // Update in NotificationManager
+        val currentList = _notifications.value?.toMutableList() ?: mutableListOf()
+        val updatedList = currentList.map { it.copy(read_status = true) }
+        _notifications.value = updatedList
         NotificationManager.markAllAsRead()
-
-        // Update local list
-        _notifications.value = _notifications.value?.map { it.copy(read_status = true) }
+        applyFilter()
     }
 
     fun markAllUnread() {
-        // Update in NotificationManager
+        val currentList = _notifications.value?.toMutableList() ?: mutableListOf()
+        val updatedList = currentList.map { it.copy(read_status = false) }
+        _notifications.value = updatedList
         NotificationManager.markAllAsUnread()
-
-        // Update local list
-        _notifications.value = _notifications.value?.map { it.copy(read_status = false) }
+        applyFilter()
     }
 
     fun deleteAll() {
-        // Clear NotificationManager
-        NotificationManager.clearNotifications()
-
-        // Update local list
         _notifications.value = emptyList()
+        NotificationManager.clearNotifications()
+        applyFilter()
     }
 } 

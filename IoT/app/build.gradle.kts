@@ -47,6 +47,7 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     implementation("androidx.fragment:fragment-ktx:1.6.2")
     implementation("com.google.android.material:material:1.11.0")
-
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("androidx.activity:activity-ktx:1.10.1")
 
 }

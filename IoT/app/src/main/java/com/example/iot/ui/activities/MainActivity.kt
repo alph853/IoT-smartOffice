@@ -2,6 +2,8 @@ package com.example.iot.ui.activities
 
 import android.os.Bundle
 import android.util.Log
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.TextView
@@ -12,6 +14,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import com.example.iot.fragments.*
+import com.example.iot.domain.managers.WebSocketManager
 import android.widget.ImageButton
 import android.widget.PopupMenu
 import androidx.recyclerview.widget.GridLayoutManager
@@ -25,6 +28,8 @@ import javax.net.ssl.HttpsURLConnection
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.activity.viewModels
 
 import com.example.iot.domain.models.Room
 import com.example.iot.domain.managers.RoomManager
@@ -37,6 +42,7 @@ import com.example.iot.fragments.SettingFragment
 import com.example.iot.domain.managers.SensorManager
 import com.example.iot.domain.managers.ActuatorManager
 import com.example.iot.R
+import com.example.iot.data.viewmodels.NotificationViewModel
 
 import com.example.iot.domain.managers.NotificationManager
 import com.example.iot.data.viewmodels.Notification
@@ -49,11 +55,32 @@ class MainActivity : AppCompatActivity() {
     private lateinit var roomAdapter: RoomAdapter
     private lateinit var tvActiveCount: TextView
 
+    private val notificationViewModel: NotificationViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         supportActionBar?.hide()
         setContentView(R.layout.activity_main)
+
+        // Initialize NotificationViewModel first to ensure listeners are registered
+        notificationViewModel.loadNotifications() // This forces initialization
+        
+        // Small delay to ensure all UI components are ready
+        Handler(Looper.getMainLooper()).postDelayed({
+            // Initialize WebSocket connection after UI is ready
+            WebSocketManager.connect()
+        }, 500) // 500ms delay
+
+        // Set up WebSocket callbacks
+        WebSocketManager.setOnDeviceUpdateListener {
+            // Refresh device list
+            roomAdapter.notifyDataSetChanged()
+            updateActiveCount()
+        }
+          WebSocketManager.setOnNotificationUpdateListener {
+            // Notifications are now automatically updated through NotificationManager listeners
+            // No need to manually call loadNotifications() anymore
+        }
 
         fetchRoomData().start()
         fetchNotificationData().start()
@@ -134,10 +161,20 @@ class MainActivity : AppCompatActivity() {
             if (roomAdapter.isModifyMode()) {
                 roomAdapter.setModifyMode(false)
             }
-        }
-
-        // Update active count initially
+        }        // Update active count initially
         updateActiveCount()
+        
+        // Signal that UI is ready for WebSocket notifications
+        WebSocketManager.setUIReady()
+        Log.d("MainActivity", "UI components initialized, WebSocket notifications enabled")
+        
+        // Test WebSocket notification flow (for debugging)
+        // Remove this in production
+//        Thread {
+//            Thread.sleep(5000) // Wait 5 seconds after startup
+//            Log.d("TestNotification", "Auto-triggering test notification after startup")
+//            testNotificationFlow()
+//        }.start()
     }
 
     private fun fetchRoomData(): Thread {
@@ -244,7 +281,7 @@ class MainActivity : AppCompatActivity() {
 
                     // Clear existing notifications and add new ones
                     runOnUiThread {
-                        NotificationManager.clearNotifications()
+//                        NotificationManager.clearNotifications()
 
                         notificationsJson.forEach { notificationJson ->
                             // Set appropriate icon based on notification type
@@ -259,7 +296,7 @@ class MainActivity : AppCompatActivity() {
                             
                             // Format timestamp from "2025-05-24T09:58:42.605417Z" to "09:58 24-05-2025"
                             val formattedTime = try {
-                                val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", Locale.getDefault())
+                                val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS", Locale.getDefault())
                                 inputFormat.timeZone = TimeZone.getTimeZone("UTC")
                                 val date = inputFormat.parse(notificationJson.ts)
                                 val outputFormat = SimpleDateFormat("HH:mm dd-MM-yyyy", Locale.getDefault())
@@ -394,5 +431,37 @@ class MainActivity : AppCompatActivity() {
             // Update the room list
             roomAdapter.notifyDataSetChanged()
         }
+    }
+      // Test method to simulate WebSocket notification
+    private fun testNotificationFlow() {
+        val testMessage = """
+        {
+            "method": "notification",
+            "params": {
+                "id": 195,
+                "message": "Welcome back to your smart office server!",
+                "read_status": false,
+                "type": "info", 
+                "title": "Returner message",
+                "device_id": null,
+                "ts": "2025-05-26T12:23:59.098230"
+            }
+        }
+        """.trimIndent()
+        
+        Log.d("TestNotification", "Testing notification flow with message: $testMessage")
+        Log.d("TestNotification", "Current notification count before test: ${NotificationManager.getNotificationCount()}")
+//        WebSocketManager.simulateNotificationMessage(testMessage)
+        
+        // Wait a moment and check if notification was added
+        Handler(Looper.getMainLooper()).postDelayed({
+            Log.d("TestNotification", "Current notification count after test: ${NotificationManager.getNotificationCount()}")
+            Log.d("TestNotification", "Test completed - check notification tab to see if new notification appears")
+        }, 1000)
+    }
+    
+    // Call this method for testing - can be triggered from debugging tools or logs
+    fun triggerTestNotification() {
+        testNotificationFlow()
     }
 }

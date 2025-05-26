@@ -24,12 +24,12 @@ data class Device(
 ) {
     /**
      * Kiểm tra thiết bị có phải là actuator hay không (thiết bị có thể điều khiển)
-     */
-    fun isActuator(): Boolean {
+     */    fun isActuator(): Boolean {
         return type == DeviceType.FAN || 
                type == DeviceType.AC || 
                type == DeviceType.CEILING_LIGHT || 
                type == DeviceType.BULB || 
+               type == DeviceType.LED4RGB ||
                type == DeviceType.PURIFIER
     }
     
@@ -54,6 +54,7 @@ enum class DeviceType {
     AC,             // Điều hòa
     CEILING_LIGHT,  // Đèn trần
     BULB,           // Bóng đèn
+    LED4RGB,        // LED RGB 4 màu
     PURIFIER,       // Máy lọc không khí
     CLIMATE,        // Thiết bị điều hòa nhiệt độ
     
