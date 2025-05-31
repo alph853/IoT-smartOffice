@@ -85,7 +85,11 @@ class NotificationService:
             notification = await self.create_notification(notification)
             await self.event_bus.publish(BroadcastMessage(
                 method="notification",
-                params=notification.model_dump(exclude_none=True),
+                params=notification,
+            ))
+            await self.event_bus.publish(BroadcastMessage(
+                method="deviceUpdated",
+                params={"device": device},
             ))
         except Exception as e:
             logger.error(f"Error handling device connected event: {e}")
@@ -104,7 +108,11 @@ class NotificationService:
             notification = await self.create_notification(notification)
             await self.event_bus.publish(BroadcastMessage(
                 method="notification",
-                params=notification.model_dump(exclude_none=True),
+                params=notification,
+            ))
+            await self.event_bus.publish(BroadcastMessage(
+                method="deviceUpdated",
+                params={"device": device},
             ))
         except Exception as e:
             logger.error(f"Error handling device disconnected event: {e}")
@@ -114,7 +122,7 @@ class NotificationService:
             notification = await self.create_notification(event.notification)
             await self.event_bus.publish(BroadcastMessage(
                 method="notification",
-                params=notification.model_dump(exclude_none=True),
+                params=notification,
             ))
         except Exception as e:
             logger.error(f"Error handling notification event: {e}")

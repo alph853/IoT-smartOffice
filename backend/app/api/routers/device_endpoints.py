@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Response, status, Path
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional
 from fastapi import Depends, Query
@@ -18,7 +19,9 @@ async def get_devices(
     device_service: DeviceService = Depends(get_device_service),
 ):
     devices = await device_service.get_devices(return_components=return_components)
-    return devices
+    # Convert to JSON string with proper serialization
+    payload = "[" + ",".join([device.model_dump_json(exclude_none=True) for device in devices]) + "]"
+    return Response(content=payload, media_type="application/json")
 
 
 @router.get("/sensors", response_model=List[Sensor])

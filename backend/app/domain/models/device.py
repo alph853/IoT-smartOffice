@@ -102,6 +102,9 @@ class Device(BaseModel):
     class Config:
         use_enum_values = True
 
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
 
 class DeviceUpdate(BaseModel):
     name: str | None = None

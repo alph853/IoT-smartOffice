@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 from enum import Enum
-from typing import Tuple
+from typing import Tuple, Dict
 
-from app.domain.models import Notification
+from app.domain.models import Notification, Device
 
 
 COLOR_MAP = {
@@ -17,7 +17,7 @@ COLOR_MAP = {
 
 class BroadcastMessage(BaseModel):
     method: str
-    params: Notification | None = None
+    params: Notification | Dict[str, Device] | None = None
 
 
 class SupportedColor(str, Enum):

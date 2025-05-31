@@ -107,7 +107,7 @@ class BroadcastService:
 
     async def _handle_broadcast_event(self, msg: BroadcastMessage):
         try:
-            await self._broadcast(msg.model_dump_json())
+            await self._broadcast(msg.model_dump_json(exclude_none=True))
         except Exception as e:
             logger.error(f"Error broadcasting event: {e}")
 
