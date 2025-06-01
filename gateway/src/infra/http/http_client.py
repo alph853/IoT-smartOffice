@@ -3,7 +3,7 @@ from loguru import logger
 
 from src.domain.repositories import HttpClientRepository
 from src.domain.models import Device, DeviceCreate
-from typing import Dict, List
+from typing import Dict, List, Any
 
 
 class HttpClient(HttpClientRepository):
@@ -59,25 +59,42 @@ class HttpClient(HttpClientRepository):
         logger.info(f"Created device: {response}")
         return Device(**response)
     
-    async def update_device(self, device: Device) -> Device:
+    async def update_device(self, device_id: int, data: Dict[str, Any]) -> Device:
         api = self.api['update_device']
-        url = f"{self.url}{api['url']}"
+        url = f"{self.url}{api['url']}".format(device_id=device_id)
         response = await self._send_request(
             url=url,
-            payload=device.model_dump(exclude_none=True),
+            payload=data,
             method=api['method']
             )
-        return Device(**response)
+        return Device(**response) if response else None
     
     async def delete_device(self, device_id: str) -> bool:
         api = self.api['delete_device']
-        url = f"{self.url}{api['url']}"
+        url = f"{self.url}{api['url']}".format(device_id=device_id)
         response = await self._send_request(
             url=url,
-            payload=device_id,
+            payload=None,
             method=api['method']
             )
-        return response
+        return bool(response) if response else False
+    # -------------------------------------------------------------
+    # ------------------------- Generic ---------------------------
+    # -------------------------------------------------------------
+    
+    async def post(self, endpoint: str, data: Dict[str, Any]) -> Dict[str, Any] | None:
+        """Generic POST request to any endpoint"""
+        url = f"{self.url}{endpoint}"
+        try:
+            response = await self._send_request(
+                url=url,
+                payload=data,
+                method="POST"
+            )
+            return response
+        except Exception as e:
+            logger.error(f"Error in POST request to {endpoint}: {e}")
+            return None
     # -------------------------------------------------------------
     # ------------------------- Helper ----------------------------
     # -------------------------------------------------------------

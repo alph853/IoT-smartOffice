@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Dict, Any
 
 from src.domain.models import Device, DeviceCreate
 
@@ -34,9 +34,17 @@ class HttpClientRepository(ABC):
         pass
 
     @abstractmethod
-    async def update_device(self, device: Device) -> Device | None:
+    async def update_device(self, device_id: int, data: Dict[str, Any]) -> Device | None:
         pass
     
     @abstractmethod
     async def delete_device(self, device_id: str) -> bool:
+        pass
+    
+    # -------------------------------------------------------------
+    # ------------------------- Generic ---------------------------
+    # -------------------------------------------------------------
+    
+    @abstractmethod
+    async def post(self, endpoint: str, data: Dict[str, Any]) -> Dict[str, Any] | None:
         pass

@@ -36,7 +36,7 @@ class SetLightingEvent(RPCRequest):
 
 class SetFanStateEvent(RPCRequest):
     actuator_id: int
-    fan_state: bool
+    state: bool
 
 
 class RPCTestEvent(RPCRequest):

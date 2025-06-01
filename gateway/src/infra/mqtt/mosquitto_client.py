@@ -34,6 +34,7 @@ class MosquittoClient(MqttGatewayClientRepository):
             TestEvent: self._handle_test_connection,
             InvalidMessageEvent: self._handle_invalid_message,
         }
+        self.topic_callbacks = {}  # Store callbacks for specific topics
 
 
     # -------------------------------------------------------------
@@ -56,6 +57,28 @@ class MosquittoClient(MqttGatewayClientRepository):
             self._listener_task.cancel()
 
         logger.info(f"Mosquitto broker disconnected.")
+
+    # -------------------------------------------------------------
+    # ------------------------- Subscriber ------------------------
+    # -------------------------------------------------------------
+    
+    async def get_topics(self) -> Dict[str, Dict[str, Any]]:
+        """Get all configured topics"""
+        return self.topics
+    
+    async def subscribe(self, topic: str, callback):
+        """Subscribe to a specific topic with a callback"""
+        # Add callback to event handlers
+        # For LWT, we'll handle it in the message processor
+        self.topic_callbacks[topic] = callback
+        await self.client.subscribe(topic=topic, qos=1)
+        logger.info(f"Subscribed to topic: {topic}")
+    
+    async def unsubscribe(self, topic: str):
+        """Unsubscribe from a specific topic"""
+        await self.client.unsubscribe(topic)
+        self.topic_callbacks.pop(topic, None)
+        logger.info(f"Unsubscribed from topic: {topic}")
 
     # -------------------------------------------------------------
     # ------------------------- Publisher -------------------------
@@ -166,12 +189,27 @@ class MosquittoClient(MqttGatewayClientRepository):
         payload = msg.payload.decode()
 
         logger.info(f"Received message on topic {topic}: {payload}")
+        
+        # Check if there's a specific callback for this topic
+        if topic in self.topic_callbacks:
+            try:
+                await self.topic_callbacks[topic]({"topic": topic, "payload": payload})
+                return
+            except Exception as e:
+                logger.error(f"Error in topic callback for {topic}: {e}")
+                return
+        
         try:
             try:    payload = json.loads(payload)
             except: payload = payload
 
             if topic.startswith(self.topics['test']['topic']):
                 event = TestEvent(payload=payload)
+            elif topic == self.topics.get('lwt', {}).get('topic'):
+                # Handle LWT message
+                event = None
+                if 'lwt' in self.topic_callbacks:
+                    await self.topic_callbacks['lwt']({"topic": topic, "payload": payload})
             elif topic.startswith(self.topics['register_request']['topic']):
                 event = RegisterRequestEvent(device=DeviceRegistration(**payload))
             elif topic.startswith(self.topics['telemetry']['topic']):

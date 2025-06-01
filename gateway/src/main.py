@@ -49,11 +49,15 @@ async def lifespan(container: Container):
     registration_service = container.registration_service()
     telemetry_service    = container.telemetry_service()
     control_service      = container.control_service()
+    lwt_service          = container.lwt_service()
+    ai_multimedia_service = container.ai_multimedia_service()
     # auto_dispatcher      = container.auto_dispatcher()
 
     await registration_service.start()
     await telemetry_service.start()
     await control_service.start()
+    await lwt_service.start()
+    await ai_multimedia_service.start()
 
 
     # --------
@@ -67,6 +71,10 @@ async def lifespan(container: Container):
 
         await registration_service.stop()
         await telemetry_service.stop()
+        await control_service.stop()
+        await lwt_service.stop()
+        await ai_multimedia_service.stop()
+        
         logger.info("Gateway shutdown successfully")
     except Exception as e:
         logger.error(f"Error shutting down gateway: {e}")

@@ -58,6 +58,15 @@ class RedisCacheClient(CacheClientRepository):
             return Device(**json.loads(device_data))
         return None
 
+    async def get_device_by_mac(self, mac_address: str) -> Device | None:
+        """Get device by MAC address"""
+        # Get all devices and find by MAC
+        devices = await self.get_all_devices()
+        for device in devices:
+            if device.mac_addr == mac_address:
+                return device
+        return None
+
     async def add_device(self, device: Device) -> Device:
         device_key    = f"device:id:{device.id}"
         for actuator in device.actuators:
@@ -125,6 +134,16 @@ class RedisCacheClient(CacheClientRepository):
                 return True
         except Exception as e:
             logger.error(f"Error updating actuator: {e}")
+            return False
+
+    async def set_device(self, device: Device) -> bool:
+        """Update entire device object in cache"""
+        try:
+            device_key = f"device:id:{device.id}"
+            await self.client.set(device_key, json.dumps(device.model_dump(exclude_none=True)))
+            return True
+        except Exception as e:
+            logger.error(f"Error setting device in cache: {e}")
             return False
 
     # -------------------------------------------------------------

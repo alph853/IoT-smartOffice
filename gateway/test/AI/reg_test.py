@@ -5,7 +5,7 @@ import paho.mqtt.client as mqtt
 import uuid
 
 # MQTT broker settings
-BROKER_URL = "192.168.1.164"
+BROKER_URL = "192.168.1.196"
 BROKER_PORT = 1883
 
 # Topics

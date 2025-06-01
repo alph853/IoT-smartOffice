@@ -58,6 +58,11 @@ class Device(BaseModel):
 
     class Config:
         use_enum_values = True
+    
+    @property
+    def name(self) -> str:
+        """Alias for thingsboard_name for backward compatibility"""
+        return self.thingsboard_name
 
 
 class DeviceRegistration(BaseModel):

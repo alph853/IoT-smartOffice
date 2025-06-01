@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Callable, Dict, Any
 
 from src.domain.models import Device
 from src.domain.events import SetLightingEvent, SetFanStateEvent, RPCTestEvent
@@ -16,6 +17,23 @@ class MqttGatewayClientRepository(ABC):
     @abstractmethod
     async def disconnect(self):
         pass
+    
+    # -------------------------------------------------------------
+    # ------------------------- Subscriber ------------------------
+    # -------------------------------------------------------------
+    
+    @abstractmethod
+    async def get_topics(self) -> Dict[str, Dict[str, Any]]:
+        pass
+    
+    @abstractmethod
+    async def subscribe(self, topic: str, callback: Callable):
+        pass
+    
+    @abstractmethod
+    async def unsubscribe(self, topic: str):
+        pass
+    
     # -------------------------------------------------------------
     # ------------------------- Publisher -------------------------
     # -------------------------------------------------------------

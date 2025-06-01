@@ -65,12 +65,21 @@
     "mosquitto": {
         "url": "",
         "port": 1883,
+        "password": "",
         "topics": {
             "test": {
                 "topic": "test/topic",
                 "qos": 1,
                 "retain": 0,
                 "description": "Test for connection",
+                "src": "device",
+                "dst": "gateway"
+            },
+            "lwt": {
+                "topic": "gateway/lwt",
+                "qos": 1,
+                "retain": 1,
+                "description": "Device is offline",
                 "src": "device",
                 "dst": "gateway"
             },

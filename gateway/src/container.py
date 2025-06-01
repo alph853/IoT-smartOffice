@@ -70,6 +70,7 @@ class Container(containers.DeclarativeContainer):
         event_bus=event_bus,
         cache_client=cache_client,
         cloud_client=thingsboard_client,
+        http_client=http_client,
     )
     control_service = providers.Singleton(
         ControlService,
@@ -77,6 +78,19 @@ class Container(containers.DeclarativeContainer):
         gw_client=mosquitto_client,
         cache_client=cache_client,
         cloud_client=thingsboard_client,
+    )
+    lwt_service = providers.Singleton(
+        LWTService,
+        event_bus=event_bus,
+        cache_client=cache_client,
+        http_client=http_client,
+        mqtt_gateway_client=mosquitto_client,
+    )
+    ai_multimedia_service = providers.Singleton(
+        AIMultimediaService,
+        event_bus=event_bus,
+        http_client=http_client,
+        cache_client=cache_client,
     )
     # auto_dispatcher = providers.Singleton(
     #     AutoDispatcherService,

@@ -2,9 +2,9 @@ CREATE_TABLE = """
 -- 1. OFFICE
 CREATE TABLE office (
   id            SERIAL PRIMARY KEY,
-  room          TEXT              NOT NULL,
-  building      TEXT              NOT NULL,
-  name          TEXT              NOT NULL,
+  room          TEXT,
+  building      TEXT,
+  name          TEXT,
   description   TEXT,
 );
 
@@ -25,7 +25,6 @@ CREATE TABLE monitor (
 -- 3. DEVICE
 CREATE TABLE device (
   id            SERIAL PRIMARY KEY,
-  mode          TEXT              NOT NULL,
   name          TEXT              UNIQUE NOT NULL,
   registered_at TIMESTAMPTZ       NOT NULL DEFAULT now(),
   mac_addr      TEXT              NOT NULL UNIQUE,
@@ -36,33 +35,37 @@ CREATE TABLE device (
   office_id     INTEGER           REFERENCES office(id)  ON DELETE SET NULL,
   gateway_id    INTEGER           REFERENCES gateway(id) ON DELETE SET NULL,
   status        TEXT              NOT NULL DEFAULT 'online',
-  access_token  TEXT              UNIQUE
+  access_token  TEXT              UNIQUE,
+  thingsboard_name TEXT           NOT NULL,          
+  device_id       TEXT            NOT NULL,
 );
 
 ALTER TABLE device
 ADD CONSTRAINT device_name_unique UNIQUE (name);
 
--- 5. SENSOR  (extends capability)
+-- 5. SENSOR
 CREATE TABLE sensor (
   id         SERIAL PRIMARY KEY,
   device_id  INTEGER NOT NULL
                REFERENCES device(id) ON DELETE CASCADE
                DEFERRABLE INITIALLY DEFERRED,
-  unit       TEXT     NOT NULL,
+  unit       TEXT,
   name       TEXT     NOT NULL,
   type       TEXT     NOT NULL
 );
 
--- 6. ACTUATOR (extends capability)
+-- 6. ACTUATOR
 CREATE TABLE actuator (
   id         SERIAL PRIMARY KEY,
   device_id  INTEGER NOT NULL
                REFERENCES device(id) ON DELETE CASCADE
                DEFERRABLE INITIALLY DEFERRED,
   name        TEXT     NOT NULL,
-  type        TEXT     NOT NULL
+  type        TEXT     NOT NULL,
+  mode        TEXT     NOT NULL,
+  setting     JSONB    NOT NULL
 );
-
+  
 
 -- 8. SCHEDULE
 CREATE TABLE schedule (
@@ -90,8 +93,8 @@ CREATE TABLE control (
 CREATE TABLE sensor_reading (
   id            SERIAL PRIMARY KEY,
   data          JSONB             NOT NULL,
-  cap_id        INTEGER           NOT NULL
-                   REFERENCES sensor(cap_id)   ON DELETE CASCADE,
+  sensor_id     INTEGER           NOT NULL
+                   REFERENCES sensor(id)   ON DELETE CASCADE,
   ts            TIMESTAMPTZ       NOT NULL DEFAULT now()
 );
 
@@ -101,7 +104,7 @@ CREATE TABLE activity_log (
   in_mode       TEXT              NOT NULL,
   params        JSONB,
   description   TEXT,
-  cap_id        INTEGER           REFERENCES capability(id) ON DELETE SET NULL,
+  actuator_id   INTEGER           REFERENCES actuator(id) ON DELETE SET NULL,
   ts            TIMESTAMPTZ       NOT NULL DEFAULT now()
 );
 
@@ -127,3 +130,4 @@ CREATE TABLE notification (
 
 
 """
+
