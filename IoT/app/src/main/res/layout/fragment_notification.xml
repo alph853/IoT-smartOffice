@@ -65,15 +65,10 @@
             android:backgroundTint="@color/primary_green"
             android:textColor="@android:color/white"
             android:layout_marginEnd="8dp"/>
-        <Button
-            android:id="@+id/btn_mark_all_unread"
+        <View
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/mark_all_unread"
-            android:backgroundTint="@color/primary_green"
-            android:textColor="@android:color/white"
-            android:layout_marginEnd="8dp"/>
+            android:layout_height="0dp"
+            android:layout_weight="1" />
         <Button
             android:id="@+id/btn_delete_all"
             android:layout_width="0dp"

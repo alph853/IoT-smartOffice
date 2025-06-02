@@ -19,12 +19,18 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.iot.domain.models.MCU
 import com.example.iot.domain.models.Room
+import com.example.iot.domain.models.MCUUpdateRequest
 import com.example.iot.domain.managers.RoomManager
 import com.example.iot.ui.adapters.SensorAdapter
 import com.example.iot.ui.adapters.ActuatorAdapter
 import com.example.iot.ui.navigation.NavigationBar
 import com.example.iot.ui.activities.MainActivity
 import com.example.iot.R
+import okhttp3.*
+import java.io.IOException
+import com.google.gson.Gson
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 
 class MCUDetailActivity : AppCompatActivity() {
 
@@ -253,6 +259,46 @@ class MCUDetailActivity : AppCompatActivity() {
     private fun saveMCUChanges() {
         currentRoom.updateMCU(originalMCU, mcu)
         originalMCU = mcu.copy() // Update the original MCU reference
+
+        // --- REST API call to update MCU ---
+        val client = OkHttpClient()
+        val gson = Gson()
+
+        // Create the update request
+        val updateRequest = MCUUpdateRequest(
+            name = mcu.name,
+            description = mcu.description,
+            fw_version = mcu.fw_version,
+            model = mcu.model,
+            office_id = mcu.office_id,
+            gateway_id = mcu.gateway_id,
+            status = mcu.status,
+            access_token = mcu.access_token,
+            last_seen_at = mcu.last_seen_at,
+            actuators = mcu.actuators,
+            sensors = mcu.sensors
+        )
+
+        val mcuJson = gson.toJson(updateRequest)
+        val url = "https://10diemiot.ngrok.io/devices/${mcu.id}"
+        val body = mcuJson.toRequestBody("application/json".toMediaTypeOrNull())
+        val request = Request.Builder().url(url).patch(body).build()
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                runOnUiThread {
+                    android.widget.Toast.makeText(this@MCUDetailActivity, "Failed to update MCU: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+            override fun onResponse(call: Call, response: Response) {
+                runOnUiThread {
+                    if (response.isSuccessful) {
+                        android.widget.Toast.makeText(this@MCUDetailActivity, "MCU updated successfully", android.widget.Toast.LENGTH_SHORT).show()
+                    } else {
+                        android.widget.Toast.makeText(this@MCUDetailActivity, "Failed to update MCU", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        })
     }
 
     private fun setupNavigationBar() {

@@ -58,3 +58,17 @@ data class MCU(
         components = mutableListOf()
     )
 }
+
+data class MCUUpdateRequest(
+    val name: String,
+    val description: String,
+    val fw_version: String,
+    val model: String,
+    val office_id: Int,
+    val gateway_id: Int,
+    val status: String,
+    val access_token: String?,
+    val last_seen_at: String,
+    val actuators: MutableList<Actuator>,
+    val sensors: MutableList<Sensor>
+)

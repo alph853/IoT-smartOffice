@@ -20,7 +20,8 @@ data class Device(
     val type: DeviceType,          // Loại thiết bị
     val iconResId: Int,            // Resource ID của icon
     var isOn: Boolean = false,     // Trạng thái bật/tắt
-    val room: String = ""          // Phòng chứa thiết bị
+    val room: String = "",         // Phòng chứa thiết bị
+    var mode: String = "Manual"    // Chế độ hoạt động (Manual, Auto, Schedule)
 ) {
     /**
      * Kiểm tra thiết bị có phải là actuator hay không (thiết bị có thể điều khiển)
@@ -49,6 +50,9 @@ data class Device(
  * Các loại thiết bị được hỗ trợ
  */
 enum class DeviceType {
+    // MCU
+
+
     // Actuators (thiết bị điều khiển)
     FAN,            // Quạt
     AC,             // Điều hòa

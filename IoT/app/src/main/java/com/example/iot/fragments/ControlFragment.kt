@@ -14,7 +14,6 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.iot.domain.models.Device
 import com.example.iot.domain.models.DeviceType
-import com.example.iot.domain.models.Mode
 import com.example.iot.domain.models.Room
 import com.example.iot.domain.managers.RoomManager
 import com.example.iot.domain.models.SensorData
@@ -24,10 +23,13 @@ import com.google.android.material.tabs.TabLayout
 import java.util.*
 import kotlin.concurrent.fixedRateTimer
 import com.example.iot.ui.adapters.DeviceAdapter
+import com.example.iot.ui.adapters.MCUAdapterControl
 import com.example.iot.R
 import com.example.iot.domain.models.MCU
 import com.example.iot.domain.models.Component
 import com.example.iot.domain.managers.WebSocketManager
+import okhttp3.*
+import java.io.IOException
 
 /**
  * ControlFragment - Displays and controls actuators from all devices (MCUs) in each room
@@ -47,18 +49,13 @@ class ControlFragment : Fragment() {
     private lateinit var devicesGrid: RecyclerView
 //    private var temperatureValue: TextView? = null
 //    private var humidityValue: TextView? = null
-    private lateinit var modeRadioGroup: RadioGroup
-    private lateinit var modeDescription: TextView
     private lateinit var thresholdContainer: LinearLayout
     private lateinit var disabledMessage: TextView
     private lateinit var tabLayout: TabLayout
+    private lateinit var mcuGrid: RecyclerView
 
     // Current selected room
     private var currentRoom = ""
-
-    // Current mode
-    private val _currentMode = MutableLiveData(Mode.MANUAL)
-    private val currentMode: LiveData<Mode> = _currentMode
 
     // Sensor data
 //    private val _sensorData = MutableLiveData(SensorData())
@@ -70,6 +67,9 @@ class ControlFragment : Fragment() {
     // Timer for sensor simulation
 //    private var sensorTimer: Timer? = null
 
+    private lateinit var mcuAdapter: MCUAdapterControl
+    private val roomMcusMap = mutableMapOf<String, MutableList<MCU>>()
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
@@ -78,6 +78,8 @@ class ControlFragment : Fragment() {
         try {
             // Initialize device data from RoomManager
             initializeDeviceDataFromRooms()
+            // Initialize MCU data
+            initializeMcuData()
             // Initialize thresholds
             initializeThresholds()
             // Setup UI
@@ -86,8 +88,24 @@ class ControlFragment : Fragment() {
             setupDynamicTabs()
             // Setup click listeners
             setupClickListeners(view)
-            // Setup mode control
-            setupModeControl()
+            // Register WebSocket device update callback
+            WebSocketManager.setOnDeviceUpdateListener {
+                requireActivity().runOnUiThread {
+                    // Reinitialize all data
+                    initializeDeviceDataFromRooms()
+                    initializeMcuData()
+                    setupDynamicTabs()
+                    
+                    // Update the current room's devices if we have a selected room
+                    if (currentRoom.isNotEmpty()) {
+                        showRoom(currentRoom)
+                    }
+                    
+                    // Notify adapters of data changes
+                    deviceAdapter.notifyDataSetChanged()
+                    mcuAdapter.notifyDataSetChanged()
+                }
+            }
             // Start sensor simulation
 //            startSensorSimulation()
         } catch (e: Exception) {
@@ -122,7 +140,8 @@ class ControlFragment : Fragment() {
                 // Convert only actuators from all MCU devices in the room to Device objects for control
                 room.devices.forEach { mcu ->
                     // Add only actuators as controllable devices (skip sensors)
-                    mcu.actuators.forEach { actuator ->                        val deviceType = when (actuator.type.lowercase()) {
+                    mcu.actuators.forEach { actuator ->
+                        val deviceType = when (actuator.type.lowercase()) {
                             "fan" -> DeviceType.FAN
                             "led4rgb" -> DeviceType.LED4RGB
                             "led", "light", "indicator" -> DeviceType.BULB
@@ -147,7 +166,8 @@ class ControlFragment : Fragment() {
                             type = deviceType,
                             iconResId = iconRes,
                             isOn = false, // Default to off
-                            room = room.name
+                            room = room.name,
+                            mode = actuator.mode // Copy mode from actuator
                         ))
                     }
                 }
@@ -160,7 +180,29 @@ class ControlFragment : Fragment() {
             roomDevicesMap.clear()
             roomsList.clear()
         }
-    }    private fun initializeThresholds() {
+    }
+
+    private fun initializeMcuData() {
+        try {
+            roomMcusMap.clear()
+            
+            roomsList.forEach { room ->
+                val mcus = mutableListOf<MCU>()
+                room.devices.forEach { mcu ->
+                    mcus.add(mcu)
+                }
+                roomMcusMap[room.name] = mcus
+                // Debug log
+                android.util.Log.d("ControlFragment", "Room ${room.name} has ${mcus.size} MCUs")
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            android.util.Log.e("ControlFragment", "Error initializing MCU data: ${e.message}")
+            roomMcusMap.clear()
+        }
+    }
+
+    private fun initializeThresholds() {
         thresholds[DeviceType.FAN] = Threshold(28.0f, 26.0f, SensorType.TEMPERATURE)
         thresholds[DeviceType.AC] = Threshold(26.0f, 24.0f, SensorType.TEMPERATURE)
         thresholds[DeviceType.CEILING_LIGHT] = Threshold(50.0f, 70.0f, SensorType.LIGHT)
@@ -174,21 +216,32 @@ class ControlFragment : Fragment() {
         devicesGrid = view.findViewById(R.id.devices_grid)
 //        temperatureValue = view.findViewById(R.id.temperature_value) // May be null if sensor group is not included
 //        humidityValue = view.findViewById(R.id.humidity_value) // May be null if sensor group is not included
-        modeRadioGroup = view.findViewById(R.id.mode_radio_group)
-        modeDescription = view.findViewById(R.id.mode_description)
-        thresholdContainer = view.findViewById(R.id.threshold_container)
-        disabledMessage = view.findViewById(R.id.disabled_message)
-        tabLayout = view.findViewById(R.id.room_tabs)        // Setup RecyclerView
+//        thresholdContainer = view.findViewById(R.id.threshold_container)
+//        disabledMessage = view.findViewById(R.id.disabled_message)
+        tabLayout = view.findViewById(R.id.room_tabs)
+        mcuGrid = view.findViewById(R.id.mcu_grid)
+
+        // Setup RecyclerView for devices
         deviceAdapter = DeviceAdapter(
             onToggleListener = { device, isOn ->
                 onDeviceToggled(device, isOn)
             },
             onLED4RGBSetListener = { device ->
                 onLED4RGBSet(device)
+            },
+            onModeChangedListener = { device, newMode ->
+                onDeviceModeChanged(device, newMode)
             }
         )
         devicesGrid.layoutManager = GridLayoutManager(requireContext(), 2)
         devicesGrid.adapter = deviceAdapter
+        
+        // Setup RecyclerView for MCUs
+        mcuGrid.layoutManager = GridLayoutManager(context, 2)
+        mcuAdapter = MCUAdapterControl(emptyList()) { mcu, isOn ->
+            onMcuToggled(mcu, isOn)
+        }
+        mcuGrid.adapter = mcuAdapter
         
         // Setup sensor observers
 //        setupSensorObservers()
@@ -413,20 +466,35 @@ class ControlFragment : Fragment() {
             
             dialog.dismiss()
         }
-    }
-
-    private fun onDeviceToggled(device: Device, isOn: Boolean) {
-        if (currentMode.value != Mode.MANUAL) return
-        val status = if (isOn) getString(R.string.device_turned_on, device.name) else getString(R.string.device_turned_off, device.name)
-        Toast.makeText(requireContext(), status, Toast.LENGTH_SHORT).show()
-        // Clone list mới và update trạng thái thiết bị
+    }    private fun onDeviceToggled(device: Device, isOn: Boolean) {
+        when (device.type) {
+            DeviceType.FAN -> {
+                WebSocketManager.sendMessage(com.google.gson.JsonObject().apply {
+                    addProperty("method", "setFanState")
+                    add("params", com.google.gson.JsonObject().apply {
+                        addProperty("actuator_id", device.id.split("_")[1].toInt())
+                        addProperty("state", isOn)
+                    })
+                })
+            }
+            else -> return
+        }
+        
+        // Update device state and UI
         val devices = getDevicesForCurrentRoom().map {
             if (it.id == device.id) it.copy(isOn = isOn) else it
         }
         deviceAdapter.updateDevices(devices)
-        // Nếu cần, cập nhật lại list gốc cho phòng hiện tại
         roomDevicesMap[currentRoom]?.clear()
         roomDevicesMap[currentRoom]?.addAll(devices)
+        
+        // Show feedback
+        Toast.makeText(
+            requireContext(),
+            if (isOn) getString(R.string.device_turned_on, device.name)
+            else getString(R.string.device_turned_off, device.name),
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     private fun setupClickListeners(view: View) {
@@ -440,39 +508,9 @@ class ControlFragment : Fragment() {
             override fun onTabUnselected(tab: TabLayout.Tab?) {}
             override fun onTabReselected(tab: TabLayout.Tab?) {}
         })
-        view.findViewById<Button>(R.id.save_thresholds_button)?.setOnClickListener {
-            saveThresholds()
-        }
-    }
-
-    private fun setupModeControl() {
-        modeRadioGroup.setOnCheckedChangeListener { _, checkedId ->
-            when (checkedId) {
-                R.id.mode_manual -> {
-                    _currentMode.value = Mode.MANUAL
-                    modeDescription.text = getString(R.string.mode_manual_desc)
-                    thresholdContainer.visibility = View.GONE
-                    disabledMessage.visibility = View.GONE
-                    devicesGrid.visibility = View.VISIBLE
-                }
-                R.id.mode_auto -> {
-                    _currentMode.value = Mode.AUTO
-                    modeDescription.text = getString(R.string.mode_auto_desc)
-                    thresholdContainer.visibility = View.VISIBLE
-                    disabledMessage.visibility = View.GONE
-                    devicesGrid.visibility = View.GONE
-//                    applyAutoLogic(sensorData.value ?: SensorData())
-                }
-                R.id.mode_disabled -> {
-                    _currentMode.value = Mode.DISABLED
-                    modeDescription.text = getString(R.string.mode_disabled_desc)
-                    thresholdContainer.visibility = View.GONE
-                    disabledMessage.visibility = View.VISIBLE
-                    devicesGrid.visibility = View.GONE
-                    disableAllDevices()
-                }
-            }
-        }
+//        view.findViewById<Button>(R.id.save_thresholds_button)?.setOnClickListener {
+//            saveThresholds()
+//        }
     }
 
 //    private fun applyAutoLogic(data: SensorData) {
@@ -551,15 +589,24 @@ class ControlFragment : Fragment() {
         }
     }
 
-    private fun showRoom(room: String) {
-        currentRoom = room
-        roomTitle.text = room
-        val devices = roomDevicesMap[room] ?: mutableListOf()
+    private fun showRoom(roomName: String) {
+        currentRoom = roomName
+        roomTitle.text = roomName
+
+        // Update devices
+        val devices = roomDevicesMap[roomName] ?: emptyList()
         deviceAdapter.updateDevices(devices)
+
+        // Update MCUs
+        val mcus = roomMcusMap[roomName] ?: emptyList()
+        mcuAdapter = MCUAdapterControl(mcus) { mcu, isOn ->
+            onMcuToggled(mcu, isOn)
+        }
+        mcuGrid.adapter = mcuAdapter
     }
 
     private fun getDevicesForCurrentRoom(): List<Device> {
-        return roomDevicesMap[currentRoom] ?: mutableListOf()
+        return roomDevicesMap[currentRoom] ?: emptyList()
     }
 
     private fun saveThresholds() {
@@ -597,14 +644,82 @@ class ControlFragment : Fragment() {
             // Set the first room as current if available
             if (roomsList.isNotEmpty()) {
                 currentRoom = roomsList[0].name
-                roomTitle.text = currentRoom
-                deviceAdapter.updateDevices(roomDevicesMap[currentRoom] ?: mutableListOf())
+                showRoom(currentRoom)
             }
         } catch (e: Exception) {
             e.printStackTrace()
             // Fallback: add a default tab
             tabLayout?.addTab(tabLayout.newTab().setText("Error"))
         }
+    }
+
+    private fun onMcuToggled(mcu: MCU, isOn: Boolean) {
+        val url = if (isOn) {
+            "https://10diemiot.ngrok.io/devices/enable/${mcu.id}"
+        } else {
+            "https://10diemiot.ngrok.io/devices/disable/${mcu.id}"
+        }
+        val client = OkHttpClient()
+        val request = Request.Builder()
+            .url(url)
+            .post(RequestBody.create(null, ByteArray(0)))
+            .build()
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                requireActivity().runOnUiThread {
+                    Toast.makeText(requireContext(), "Failed to ${if (isOn) "enable" else "disable"} MCU: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+            override fun onResponse(call: Call, response: Response) {
+                requireActivity().runOnUiThread {
+                    if (response.isSuccessful) {
+                        // Update MCU state and UI
+                        val mcus = getMcusForCurrentRoom().map {
+                            if (it.id == mcu.id) it.copy(status = if (isOn) "Online" else "Offline") else it
+                        }
+                        mcuAdapter = MCUAdapterControl(mcus) { mcu, isOn ->
+                            onMcuToggled(mcu, isOn)
+                        }
+                        mcuGrid.adapter = mcuAdapter
+                        roomMcusMap[currentRoom]?.clear()
+                        roomMcusMap[currentRoom]?.addAll(mcus)
+                        Toast.makeText(requireContext(), "MCU ${if (isOn) "enabled" else "disabled"}", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(requireContext(), "Failed to ${if (isOn) "enable" else "disable"} MCU", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        })
+    }
+
+    private fun getMcusForCurrentRoom(): List<MCU> {
+        return roomMcusMap[currentRoom] ?: emptyList()
+    }
+
+    private fun onDeviceModeChanged(device: Device, newMode: String) {
+        // Update device mode in the list
+        val devices = getDevicesForCurrentRoom().map {
+            if (it.id == device.id) it.copy(mode = newMode) else it
+        }
+        deviceAdapter.updateDevices(devices)
+        roomDevicesMap[currentRoom]?.clear()
+        roomDevicesMap[currentRoom]?.addAll(devices)
+
+        // Send mode change to WebSocket
+        WebSocketManager.sendMessage(com.google.gson.JsonObject().apply {
+            addProperty("method", "setMode")
+            add("params", com.google.gson.JsonObject().apply {
+                addProperty("actuator_id", device.id.split("_")[1].toInt())
+                addProperty("mode", newMode.lowercase())
+            })
+        })
+
+        // Show feedback
+        Toast.makeText(
+            requireContext(),
+            "${device.name} mode changed to $newMode",
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     companion object {

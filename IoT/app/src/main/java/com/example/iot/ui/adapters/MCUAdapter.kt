@@ -20,6 +20,7 @@ import com.example.iot.domain.models.MCU
 import com.example.iot.domain.models.Room
 import com.example.iot.domain.models.Component
 import com.example.iot.R
+import com.google.android.material.switchmaterial.SwitchMaterial
 
 class MCUAdapter(
     private val room: Room,

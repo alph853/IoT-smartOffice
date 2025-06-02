@@ -23,6 +23,9 @@ import com.example.iot.data.viewmodels.NotificationViewModel
 import com.example.iot.data.viewmodels.NotificationFilter
 import com.example.iot.ui.adapters.NotificationAdapter
 import com.example.iot.R
+import okhttp3.*
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.IOException
 
 class NotificationFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
@@ -73,14 +76,33 @@ class NotificationFragment : Fragment() {
     private fun setupRecyclerView(view: View) {
         recyclerView = view.findViewById(R.id.recycler_notifications)
         adapter = NotificationAdapter(
-            onItemClick = { notification -> 
-                // Mark as read and navigate to detail
-                if (!notification.read_status) {
-                    viewModel.toggleRead(notification)
-                }
-                // Navigate to detail activity
-                val intent = NotificationDetailActivity.newIntent(requireContext(), notification)
-                startActivity(intent)
+            onItemClick = { notification ->
+                // Mark as read via REST API, then update UI and navigate
+                android.util.Log.d("NotificationFragment", "onItemClick: ${notification.id}")
+                val client = OkHttpClient()
+                val request = Request.Builder()
+                    .url("https://10diemiot.ngrok.io/notifications/mark-as-read/${notification.id}")
+                    .patch(ByteArray(0).toRequestBody())
+                    .build()
+                client.newCall(request).enqueue(object : Callback {
+                    override fun onFailure(call: Call, e: IOException) {
+                        requireActivity().runOnUiThread {
+                            android.widget.Toast.makeText(requireContext(), "Failed to mark as read: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    override fun onResponse(call: Call, response: Response) {
+                        requireActivity().runOnUiThread {
+                            if (response.isSuccessful) {
+                                viewModel.toggleRead(notification)
+                                // Navigate to detail activity
+                                val intent = NotificationDetailActivity.newIntent(requireContext(), notification)
+                                startActivity(intent)
+                            } else {
+                                android.widget.Toast.makeText(requireContext(), "Failed to mark as read", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                })
             },
             onItemSwiped = { notification -> viewModel.deleteNotification(notification) }
         )
@@ -103,11 +125,80 @@ class NotificationFragment : Fragment() {
 
     private fun setupBulkActions(view: View) {
         btnMarkAllRead = view.findViewById(R.id.btn_mark_all_read)
-        btnMarkAllUnread = view.findViewById(R.id.btn_mark_all_unread)
+//        btnMarkAllUnread = view.findViewById(R.id.btn_mark_all_unread)
         btnDeleteAll = view.findViewById(R.id.btn_delete_all)
-        btnMarkAllRead.setOnClickListener { viewModel.markAllRead() }
-        btnMarkAllUnread.setOnClickListener { viewModel.markAllUnread() }
-        btnDeleteAll.setOnClickListener { viewModel.deleteAll() }
+        btnMarkAllRead.setOnClickListener {
+            val client = OkHttpClient()
+            val request = Request.Builder()
+                .url("https://10diemiot.ngrok.io/notifications/mark-all-as-read")
+                .patch(ByteArray(0).toRequestBody())
+                .build()
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    requireActivity().runOnUiThread {
+                        android.widget.Toast.makeText(requireContext(), "Failed to mark all as read: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
+                override fun onResponse(call: Call, response: Response) {
+                    requireActivity().runOnUiThread {
+                        if (response.isSuccessful) {
+                            viewModel.markAllRead()
+                            android.widget.Toast.makeText(requireContext(), "Marked all as read", android.widget.Toast.LENGTH_SHORT).show()
+                        } else {
+                            android.widget.Toast.makeText(requireContext(), "Failed to mark all as read", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            })
+        }
+//        btnMarkAllUnread.setOnClickListener {
+//            val client = OkHttpClient()
+//            val request = Request.Builder()
+//                .url("https://10diemiot.ngrok.io/notifications/mark-all-as-unread")
+//                .post(RequestBody.create(null, ByteArray(0)))
+//                .build()
+//            client.newCall(request).enqueue(object : Callback {
+//                override fun onFailure(call: Call, e: IOException) {
+//                    requireActivity().runOnUiThread {
+//                        android.widget.Toast.makeText(requireContext(), "Failed to mark all as unread: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+//                    }
+//                }
+//                override fun onResponse(call: Call, response: Response) {
+//                    requireActivity().runOnUiThread {
+//                        if (response.isSuccessful) {
+//                            viewModel.markAllUnread()
+//                            android.widget.Toast.makeText(requireContext(), "Marked all as unread", android.widget.Toast.LENGTH_SHORT).show()
+//                        } else {
+//                            android.widget.Toast.makeText(requireContext(), "Failed to mark all as unread", android.widget.Toast.LENGTH_SHORT).show()
+//                        }
+//                    }
+//                }
+//            })
+//        }
+        btnDeleteAll.setOnClickListener {
+            val client = OkHttpClient()
+            val request = Request.Builder()
+                .url("https://10diemiot.ngrok.io/notifications")
+                .delete()
+                .build()
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    requireActivity().runOnUiThread {
+                        android.widget.Toast.makeText(requireContext(), "Failed to delete all notifications: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
+                override fun onResponse(call: Call, response: Response) {
+                    requireActivity().runOnUiThread {
+                        if (response.isSuccessful) {
+                            viewModel.deleteAll()
+                            android.widget.Toast.makeText(requireContext(), "Deleted all notifications", android.widget.Toast.LENGTH_SHORT).show()
+                        } else {
+                            android.widget.Toast.makeText(requireContext(), "Failed to delete all notifications", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            })
+        }
     }
 
     private fun loadNotifications() {

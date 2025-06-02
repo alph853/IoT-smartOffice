@@ -1,13 +1,10 @@
 package com.example.iot.ui.adapters
 
-import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.TextView
+import android.content.res.Resources
+import android.widget.*
 import androidx.appcompat.widget.SwitchCompat
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.DiffUtil
@@ -15,15 +12,16 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.iot.domain.models.Device
 import com.example.iot.domain.models.DeviceType
-import com.example.iot.domain.models.MCU
 import com.example.iot.R
+import com.google.gson.JsonObject
 
 /**
  * Adapter for displaying IoT devices in a grid
  */
 class DeviceAdapter(
     private val onToggleListener: (Device, Boolean) -> Unit,
-    private val onLED4RGBSetListener: ((Device) -> Unit)? = null
+    private val onLED4RGBSetListener: ((Device) -> Unit)? = null,
+    private val onModeChangedListener: ((Device, String) -> Unit)? = null
 ) : ListAdapter<Device, RecyclerView.ViewHolder>(DeviceDiffCallback()) {
 
     companion object {
@@ -48,6 +46,7 @@ class DeviceAdapter(
         val deviceStatus: TextView = itemView.findViewById(R.id.device_status)
         val deviceSwitch: SwitchCompat = itemView.findViewById(R.id.device_switch)
         private var lastClickTime = 0L
+
         fun bind(device: Device) {
             // Set device icon
             deviceIcon.setImageResource(device.iconResId)
@@ -62,32 +61,94 @@ class DeviceAdapter(
                     itemView.context.theme
                 )
             )
+
+//            // Set up mode spinner
+//            val modeSpinner = itemView.findViewById<Spinner>(R.id.mode_spinner)
+//            modeSpinner?.let { spinner ->
+//                // Set spinner selection without triggering listener
+//                spinner.onItemSelectedListener = null
+//                val currentMode = device.mode ?: "manual"
+//                val position = resources.getStringArray(R.array.actuator_modes).indexOf(currentMode.capitalize())
+//                if (position != -1) {
+//                    spinner.setSelection(position)
+//                }
+//
+//                // Set up spinner listener
+//                spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+//                    override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+//                        val selectedMode = parent?.getItemAtPosition(position).toString().lowercase()
+//                        if (selectedMode != device.mode) {
+//                            onModeChangedListener?.invoke(device, selectedMode)
+//                        }
+//                    }
+//
+//                    override fun onNothingSelected(parent: AdapterView<*>?) {}
+//                }
+//            }
+
+            // Set up mode spinner
+            val modeSpinner = itemView.findViewById<Spinner>(R.id.mode_spinner)
+            modeSpinner?.let { spinner ->
+                // Create and set custom adapter for spinner
+                val adapter = ArrayAdapter.createFromResource(
+                    itemView.context,
+                    R.array.actuator_modes,
+                    R.layout.item_spinner_mode
+                ).apply {
+                    setDropDownViewResource(R.layout.item_spinner_mode_dropdown)
+                }
+                spinner.adapter = adapter
+
+                // Set spinner selection without triggering listener
+                spinner.onItemSelectedListener = null
+                val currentMode = device.mode
+                val position = itemView.context.resources.getStringArray(R.array.actuator_modes)
+                    .map { it.lowercase() }
+                    .indexOf(currentMode.lowercase())
+                if (position != -1) {
+                    spinner.setSelection(position)
+                }
+                
+                // Set up spinner listener with debounce
+                spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                    override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                        val selectedMode = parent?.getItemAtPosition(position).toString()
+                        if (selectedMode.lowercase() != device.mode.lowercase()) {
+                            onModeChangedListener?.invoke(device, selectedMode.lowercase())
+                        }
+                    }
+                    
+                    override fun onNothingSelected(parent: AdapterView<*>?) {}
+                }
+            }
+
             // Set switch state without triggering listener
             deviceSwitch.setOnCheckedChangeListener(null)
             deviceSwitch.isChecked = device.isOn
-            // Set switch listener (debounce, UI phản hồi ngay, callback nhẹ)
+            
+            // Set switch listener with debounce
             deviceSwitch.setOnCheckedChangeListener { _, isChecked ->
                 val now = System.currentTimeMillis()
                 if (now - lastClickTime > 300) {
                     lastClickTime = now
                     if (device.isOn != isChecked) {
-                        // UI phản hồi ngay
                         onToggleListener(device.copy(isOn = isChecked), isChecked)
                     }
                 } else {
-                    // revert UI nếu double click
                     deviceSwitch.isChecked = device.isOn
                 }
             }
         }
-    }    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return when (viewType) {
             VIEW_TYPE_LED4RGB -> {
                 val view = LayoutInflater.from(parent.context).inflate(R.layout.led4rgb_card_item, parent, false)
                 LED4RGBViewHolder(view)
             }
             else -> {
-                val view = LayoutInflater.from(parent.context).inflate(R.layout.device_card_item, parent, false)
+                val view = LayoutInflater.from(parent.context).inflate(R.layout.item_actuator_control, parent, false)
                 DeviceViewHolder(view)
             }
         }
@@ -97,7 +158,8 @@ class DeviceAdapter(
         val device = getItem(position)
         when (holder) {
             is DeviceViewHolder -> holder.bind(device)
-            is LED4RGBViewHolder -> holder.bind(device)        }
+            is LED4RGBViewHolder -> holder.bind(device)
+        }
     }
 
     /**
