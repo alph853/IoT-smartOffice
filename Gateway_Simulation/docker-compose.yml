@@ -1,0 +1,69 @@
+# version: '3.4'
+services:
+  # Mosquitto MQTT Broker - Central hub for all IoT devices
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mosquitto-broker
+    restart: always
+    ports:
+      - "1883:1883"   # MQTT port
+      - "9001:9001"   # WebSocket port
+    volumes:
+      - mosquitto-config:/mosquitto/config
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    command: mosquitto -c /mosquitto-no-auth.conf
+
+  # ThingsBoard IoT Gateway Service Configuration  
+  tb-gateway:
+    image: thingsboard/tb-gateway:3.7-stable
+    container_name: tb-gateway
+    restart: always
+
+    # Ports bindings - required by some connectors
+    ports:
+        - "5000:5000" # Comment if you don't use REST connector and change if you use another port
+        # - "1883:1883" # MQTT broker port for local sensors (now handled by Mosquitto)
+        # Uncomment and modify the following ports based on connector usage:
+#        - "1052:1052" # BACnet connector
+#        - "5026:5026" # Modbus TCP connector (Modbus Slave)
+#        - "50000:50000/tcp" # Socket connector with type TCP
+#        - "50000:50000/udp" # Socket connector with type UDP
+
+    # Dependencies - Gateway needs Mosquitto to be running first
+    depends_on:
+      - mosquitto
+
+    # Necessary mapping for Linux
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    # Environment variables
+    environment:
+      - host=app.coreiot.io
+      - port=1883
+      - accessToken=g316u7decaqvzze7kbe1
+
+    # Volumes bind
+    volumes:
+      - tb-gw-config:/thingsboard_gateway/config
+      - tb-gw-logs:/thingsboard_gateway/logs
+      - tb-gw-extensions:/thingsboard_gateway/extensions
+
+# Volumes declaration for configurations, extensions and configuration
+volumes:
+  tb-gw-config:
+    name: tb-gw-config
+  tb-gw-logs:
+    name: tb-gw-logs
+  tb-gw-extensions:
+    name: tb-gw-extensions
+  mosquitto-config:
+    name: mosquitto-config
+  mosquitto-data:
+    name: mosquitto-data
+  mosquitto-log:
+    name: mosquitto-log
+
+# To run the services in detached mode
+# Use the command: docker compose up -d

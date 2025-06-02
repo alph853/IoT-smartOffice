@@ -1,0 +1,82 @@
+{
+  "name": "MQTT",
+  "id": "80cb0aa0-48bb-4db0-ba92-946536c95467",
+  "broker": {
+    "host": "mosquitto",
+    "port": 1883,
+    "version": 4,
+    "clientId": "ep1wbsep1wbsf",
+    "security": {
+      "type": "anonymous"
+    },
+    "maxNumberOfWorkers": 100,
+    "maxMessageNumberPerWorker": 10
+  },
+  "mapping": [
+    {
+      "topicFilter": "v1/devices/me/telemetry",
+      "subscriptionQos": 0,
+      "converter": {
+        "type": "json",        
+        "deviceInfo": {
+          "deviceNameExpression": "${deviceName}",
+          "deviceNameExpressionSource": "message",
+          "deviceProfileExpressionSource": "message",
+          "deviceProfileExpression": "default"
+        },
+        "attributes": [],
+        "timeseries": [
+          {
+            "key": "temperature",
+            "type": "double",
+            "value": "${temperature}"
+          },
+          {
+            "key": "humidity",
+            "type": "double",
+            "value": "${humidity}"
+          }
+        ]
+      }
+    }
+  ],
+  "requestsMapping": {
+    "connectRequests": [
+      {
+        "topicFilter": "device/connect",
+        "deviceInfo": {
+          "deviceNameExpression": "${SerialNumber}",
+          "deviceNameExpressionSource": "message",
+          "deviceProfileExpressionSource": "constant",
+          "deviceProfileExpression": "default"
+        }
+      }
+    ],
+    "disconnectRequests": [
+      {
+        "topicFilter": "device/disconnect",
+        "deviceInfo": {
+          "deviceNameExpression": "${SerialNumber}",
+          "deviceNameExpressionSource": "message"
+        }
+      }
+    ],
+    "attributeRequests": [],
+    "attributeUpdates": [],
+    "serverSideRpc": [
+      {
+        "type": "twoWay",
+        "deviceNameFilter": "device/connect",
+        "methodFilter": "${deviceName}",
+        "requestTopicExpression": ".${requestId}",
+        "responseTopicExpression": "device/${deviceName}/rpc/response/${requestId}",
+        "valueExpression": "${params}",
+        "responseTopicQoS": 0,
+        "responseTimeout": 10000
+      }
+    ]
+  },
+  "logLevel": "INFO",
+  "enableRemoteLogging": false,
+  "configVersion": "3.7.4"
+}
