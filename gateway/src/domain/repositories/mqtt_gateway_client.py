@@ -31,6 +31,10 @@ class MqttGatewayClientRepository(ABC):
         pass
     
     @abstractmethod
+    async def subscribe_without_retained(self, topic: str, callback: Callable):
+        pass
+    
+    @abstractmethod
     async def unsubscribe(self, topic: str):
         pass
     

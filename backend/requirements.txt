@@ -3,6 +3,7 @@ aiohttp
 websockets
 aiofiles
 asyncpg
+pgvector
 
 psutil
 aiomqtt

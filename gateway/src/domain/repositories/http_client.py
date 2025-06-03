@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 
-from src.domain.models import Device, DeviceCreate
+from src.domain.models import Device, DeviceCreate, DeviceStatus
 
 
 class HttpClientRepository(ABC):
@@ -17,6 +17,20 @@ class HttpClientRepository(ABC):
     async def disconnect(self):
         pass
 
+    # -------------------------------------------------------------
+    # ------------------------- Generic HTTP ----------------------
+    # -------------------------------------------------------------
+
+    @abstractmethod
+    async def post(self, endpoint: str, data: Dict[str, Any]) -> Dict[str, Any] | None:
+        """Generic POST method for sending data to any endpoint"""
+        pass
+
+    @abstractmethod
+    async def get(self, endpoint: str, use_server_url: bool = False) -> Dict[str, Any] | None:
+        """Generic GET method for sending data to any endpoint"""
+        pass
+        
     # -------------------------------------------------------------
     # ------------------------- Device ----------------------------
     # -------------------------------------------------------------
@@ -41,10 +55,7 @@ class HttpClientRepository(ABC):
     async def delete_device(self, device_id: str) -> bool:
         pass
     
-    # -------------------------------------------------------------
-    # ------------------------- Generic ---------------------------
-    # -------------------------------------------------------------
-    
     @abstractmethod
-    async def post(self, endpoint: str, data: Dict[str, Any]) -> Dict[str, Any] | None:
+    async def set_device_status(self, device_id: str, status: DeviceStatus) -> bool:
         pass
+    

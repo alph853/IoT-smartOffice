@@ -10,7 +10,7 @@ from app.services import *
 from app.infra.event_bus import InProcEventBus
 from app.infra.postgres.db import PostgreSQLConnection
 from app.infra.postgres import *
-from app.infra.mocks import *
+# from app.infra.mocks import *
 from app.infra.aiohttp import *
 from app.infra.thingsboard import *
 from app.config import Config
@@ -74,7 +74,7 @@ async def lifespan(app: FastAPI):
     device_repository       = PostgresDeviceRepository(db)
     notification_repository = PostgresNotificationRepository(db)
     office_repository       = PostgresOfficeRepository(db)
-
+    multimedia_repository   = PostgresMultimediaRepository(db)
     # ---------------------------------------------------------------
     # --------------------- Initialize services ---------------------
     # ---------------------------------------------------------------
@@ -83,11 +83,13 @@ async def lifespan(app: FastAPI):
     broadcast_service       = BroadcastService(event_bus, thingsboard_client, device_repository)
     notification_service    = NotificationService(event_bus, notification_repository, office_repository)
     office_service          = OfficeService(office_repository, device_repository)
-
+    multimedia_service      = MultimediaService(multimedia_repository)
+    
     app.state.device_service       = device_service
     app.state.broadcast_service    = broadcast_service
     app.state.notification_service = notification_service
     app.state.office_service       = office_service
+    app.state.multimedia_service   = multimedia_service
 
     # ---------------------------------------------------------------
     # ------------------- Start background tasks --------------------
@@ -132,6 +134,8 @@ app.include_router(device_router)
 app.include_router(ws_router)
 app.include_router(office_router)
 app.include_router(notification_router)
+app.include_router(schedule_router)
+app.include_router(multimedia_router)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

@@ -59,16 +59,16 @@ class RedisCacheClient(CacheClientRepository):
         return None
 
     async def get_device_by_mac(self, mac_address: str) -> Device | None:
-        """Get device by MAC address"""
-        # Get all devices and find by MAC
-        devices = await self.get_all_devices()
-        for device in devices:
-            if device.mac_addr == mac_address:
-                return device
+        key = f"device:mac:{mac_address}"
+        device_id = await self.client.get(key)
+        if device_id:
+            return await self.get_device_by_id(int(device_id))
         return None
 
     async def add_device(self, device: Device) -> Device:
-        device_key    = f"device:id:{device.id}"
+        device_key     = f"device:id:{device.id}"
+        device_mac_key = f"device:mac:{device.mac_addr}"
+        
         for actuator in device.actuators:
             actuator.device_id = device.id
         for sensor in device.sensors:
@@ -89,6 +89,7 @@ class RedisCacheClient(CacheClientRepository):
             *sensor_tasks
         ]
         await asyncio.gather(*async_tasks)
+        await self.client.set(device_mac_key, device.id)
 
         return device
 
@@ -131,19 +132,10 @@ class RedisCacheClient(CacheClientRepository):
                 actuator = json.loads(actuator)
                 actuator.update(info)
                 await self.client.set(actuator_key, json.dumps(actuator))
+                logger.info(f"Actuator {actuator_id} updated: {actuator}")
                 return True
         except Exception as e:
             logger.error(f"Error updating actuator: {e}")
-            return False
-
-    async def set_device(self, device: Device) -> bool:
-        """Update entire device object in cache"""
-        try:
-            device_key = f"device:id:{device.id}"
-            await self.client.set(device_key, json.dumps(device.model_dump(exclude_none=True)))
-            return True
-        except Exception as e:
-            logger.error(f"Error setting device in cache: {e}")
             return False
 
     # -------------------------------------------------------------

@@ -74,6 +74,25 @@ class MosquittoClient(MqttGatewayClientRepository):
         await self.client.subscribe(topic=topic, qos=1)
         logger.info(f"Subscribed to topic: {topic}")
     
+    async def subscribe_without_retained(self, topic: str, callback):
+        """Subscribe to a topic without receiving retained messages"""
+        try:
+            # First, clear any retained messages on this topic
+            await self.client.publish(topic=topic, payload="", retain=True)
+            logger.debug(f"Cleared retained messages for topic: {topic}")
+            
+            # Wait a brief moment for the clear message to be processed
+            await asyncio.sleep(0.1)
+            
+            # Now subscribe normally
+            self.topic_callbacks[topic] = callback
+            await self.client.subscribe(topic=topic, qos=1)
+            logger.info(f"Subscribed to topic without retained messages: {topic}")
+        except Exception as e:
+            logger.error(f"Failed to subscribe without retained messages to {topic}: {e}")
+            # Fallback to normal subscription
+            await self.subscribe(topic, callback)
+    
     async def unsubscribe(self, topic: str):
         """Unsubscribe from a specific topic"""
         await self.client.unsubscribe(topic)
@@ -95,13 +114,14 @@ class MosquittoClient(MqttGatewayClientRepository):
         await asyncio.gather(*subscription_tasks)
 
         response_data = {
-            "status": "OK",
             "device_id": device.id,
+            "status": "registered",
+            "name": device.thingsboard_name,
             "sensors": [{"name": sensor.name, "id": i} for i, sensor in enumerate(device.sensors)] if device.sensors else [],
             "actuators": [{"name": actuator.name, "id": i} for i, actuator in enumerate(device.actuators)] if device.actuators else []
         }
 
-        topic = self.topics['register_response']['topic'].format(device_id=device.mac_addr.replace(":", ""))
+        topic = self.topics['register_response']['topic'].format(device_id=device.mac_addr)
         logger.info(f"Registering device {device.id} to topic {topic}")
         await self.client.publish(topic, json.dumps(response_data))
 
@@ -294,7 +314,7 @@ class MosquittoClient(MqttGatewayClientRepository):
         self.pending_requests[request_id] = response_future
 
         try:
-            result = await asyncio.wait_for(response_future, timeout=8.0)
+            result = await asyncio.wait_for(response_future, timeout=5.0)
             return result
         except asyncio.TimeoutError:
             logger.warning(f"Timeout waiting for response to request {request_id}")

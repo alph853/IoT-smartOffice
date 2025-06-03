@@ -71,9 +71,8 @@ class ThingsboardClient(MqttCloudClientRepository):
 
                     async for message in ws:
                         try:
-                            logger.info(f"Received message: {message}")
                             message_json = json.loads(message)
-                            logger.info(f"Parsed message: {message_json}")
+                            # logger.info(f"Parsed message: {message_json}")
                         except json.JSONDecodeError as e:
                             logger.error(f"Received non-JSON message: {message}, error: {e}")
                         except Exception as e:
@@ -159,6 +158,7 @@ class ThingsboardClient(MqttCloudClientRepository):
             }
         }
         resp = await self.http_client.request(url, payload=payload, method="POST", headers=self.headers)
+        print(f"Update actuator response: {resp}")
         return RPCResponse(**resp)
 
     # -------------------------------------------------------------

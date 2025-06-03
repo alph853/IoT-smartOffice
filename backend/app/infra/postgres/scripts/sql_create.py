@@ -129,5 +129,27 @@ CREATE TABLE notification (
 );
 
 
-"""
+-- 14. SCHEDULE
+DROP TABLE IF EXISTS schedule CASCADE;
 
+CREATE TABLE schedule (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name          TEXT NOT NULL,
+    actuator_id   INTEGER NOT NULL REFERENCES actuator(id) ON DELETE CASCADE,
+    schedule_type TEXT NOT NULL CHECK (schedule_type IN ('lighting', 'fan')),
+    days_of_week  INTEGER[] NOT NULL,
+    start_time    TIME NOT NULL,
+    end_time      TIME NOT NULL,
+    setting       JSONB NOT NULL,
+    priority      INTEGER NOT NULL DEFAULT 0,
+    is_active     BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_schedule_actuator_id ON schedule(actuator_id);
+CREATE INDEX idx_schedule_active ON schedule(is_active);
+CREATE INDEX idx_schedule_type ON schedule(schedule_type);
+
+
+"""

@@ -13,7 +13,7 @@
         "username": "g316u7decaqvzze7kbe1",
         "client_id": "",
         "device_id": "f5883950-2739-11f0-a3c9-ab0d8999f561",
-        "device_name": "IoT Gateway",
+        "device_name": "Smart IoT Gateway",
         "topics": {
             "attributes_request": {
                 "topic": "v1/gateway/attributes",
@@ -78,7 +78,7 @@
             "lwt": {
                 "topic": "gateway/lwt",
                 "qos": 1,
-                "retain": 1,
+                "retain": 0,
                 "description": "Device is offline",
                 "src": "device",
                 "dst": "gateway"
@@ -147,6 +147,10 @@
             "delete_device": {
                 "url": "/devices/{device_id}",
                 "method": "DELETE"
+            },
+            "set_device_status": {
+                "url": "/devices/{device_id}/status",
+                "method": "PATCH"
             }
         }
     }

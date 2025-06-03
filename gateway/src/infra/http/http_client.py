@@ -2,7 +2,7 @@ from aiohttp import ClientSession, TCPConnector, ClientResponseError, ContentTyp
 from loguru import logger
 
 from src.domain.repositories import HttpClientRepository
-from src.domain.models import Device, DeviceCreate
+from src.domain.models import Device, DeviceCreate, DeviceStatus
 from typing import Dict, List, Any
 
 
@@ -23,6 +23,39 @@ class HttpClient(HttpClientRepository):
     async def disconnect(self):
         await self.session.close()
         logger.info(f"HTTP client disconnected")
+    
+    # -------------------------------------------------------------
+    # ------------------------- Generic HTTP ----------------------
+    # -------------------------------------------------------------
+
+    async def get(self, endpoint: str, use_server_url: bool = False, expect_json: bool = True) -> Dict[str, Any] | None:
+        """Generic GET method for sending data to any endpoint"""
+        url = f"{self.url if use_server_url else ''}{endpoint}"
+        try:
+            response = await self._send_request(
+                url=url,
+                method="GET",
+                expect_json=expect_json
+            )
+            return response
+        except Exception as e:
+            logger.error(f"Error in GET request to {endpoint}: {e}")
+            return None
+
+    async def post(self, endpoint: str, data: Dict[str, Any]) -> Dict[str, Any] | None:
+        """Generic POST method for sending data to any endpoint"""
+        url = f"{self.url}{endpoint}"
+        try:
+            response = await self._send_request(
+                url=url,
+                payload=data,
+                method="POST"
+            )
+            return response
+        except Exception as e:
+            logger.error(f"Error in POST request to {endpoint}: {e}")
+            return None
+
     # -------------------------------------------------------------
     # ------------------------- Device ----------------------------
     # -------------------------------------------------------------
@@ -78,39 +111,54 @@ class HttpClient(HttpClientRepository):
             method=api['method']
             )
         return bool(response) if response else False
-    # -------------------------------------------------------------
-    # ------------------------- Generic ---------------------------
-    # -------------------------------------------------------------
     
-    async def post(self, endpoint: str, data: Dict[str, Any]) -> Dict[str, Any] | None:
-        """Generic POST request to any endpoint"""
-        url = f"{self.url}{endpoint}"
-        try:
-            response = await self._send_request(
-                url=url,
-                payload=data,
-                method="POST"
+    async def set_device_status(self, device_id: str, status: DeviceStatus) -> bool:
+        api = self.api['set_device_status']
+        url = f"{self.url}{api['url']}".format(device_id=device_id)
+        response = await self._send_request(
+            url=url,
+            payload={"status": status.value},
+            method=api['method']
             )
-            return response
-        except Exception as e:
-            logger.error(f"Error in POST request to {endpoint}: {e}")
-            return None
+        return bool(response) if response else False
+
+
     # -------------------------------------------------------------
     # ------------------------- Helper ----------------------------
     # -------------------------------------------------------------
 
-    async def _send_request(self, url: str, payload: dict | None = None, method: str = "GET",
-                  headers: dict | None = None, params: dict | None = None):
-
+    async def _send_request(
+        self,
+        url: str,
+        payload: dict | None = None,
+        method: str = "GET",
+        headers: dict | None = None,
+        params: dict | None = None,
+        expect_json: bool = True
+    ):
         if headers is None:
             headers = {}
-        if 'Content-Type' not in headers:
-            headers['Content-Type'] = 'application/json'
 
-        async with self.session.request(method, url, json=payload, headers=headers, params=params) as response:
+        if expect_json:
+            if "Content-Type" not in headers:
+                headers["Content-Type"] = "application/json"
+        else:
+            headers.pop("Content-Type", None)
+            headers["Accept"] = "image/jpeg"
+
+        async with self.session.request(
+            method,
+            url,
+            json=payload if expect_json else None,
+            headers=headers,
+            params=params
+        ) as response:
             try:
                 response.raise_for_status()
-                return await response.json()
+                if expect_json:
+                    return await response.json()
+                else:
+                    return await response.read()
             except ContentTypeError:
                 text = await response.text()
                 raise Exception(f"HTTP response not JSON: {text}")

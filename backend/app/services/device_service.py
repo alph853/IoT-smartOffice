@@ -3,9 +3,10 @@ from datetime import datetime
 import asyncio
 from loguru import logger
 
-from app.domain.models import Device, DeviceRegistration, DeviceStatus, Sensor, Actuator, DeviceUpdate
+from app.domain.models import Device, DeviceRegistration, DeviceStatus, Sensor, Actuator, DeviceUpdate, Notification, NotificationType
 from app.domain.repositories import DeviceRepository, MqttCloudClientRepository
-from app.domain.events import EventBusInterface, DeviceConnectedEvent, DeviceDisconnectedEvent
+from app.domain.events import EventBusInterface, DeviceConnectedEvent, DeviceDisconnectedEvent, NotificationEvent
+from app.domain.models import BroadcastMessage
 
 
 class DeviceService:
@@ -117,6 +118,48 @@ class DeviceService:
 
     async def get_all_actuators(self) -> List[Actuator]:
         return await self.device_repo.get_all_actuators()
+
+    async def set_device_status(self, device_id: int, status: DeviceStatus) -> bool | None:
+        status = DeviceStatus(status)
+        
+        # Update device status
+        device_update = DeviceUpdate(status=status)
+        device = await self.update_device(device_id, device_update, return_components=True)
+        
+        if not device:
+            return None
+        
+        if status == DeviceStatus.OFFLINE:
+            notification = Notification(
+                title=f"Device {device.name} went offline",
+                message=f"Device {device.name} has disconnected unexpectedly (Last Will Testament).",
+                type=NotificationType.WARNING,
+                device_id=device.id,
+            )
+        elif status == DeviceStatus.ERROR:
+            notification = Notification(
+                title=f"Device {device.name} reported error",
+                message=f"Device {device.name} is experiencing errors in telemetry data.",
+                type=NotificationType.ERROR,
+                device_id=device.id,
+            )
+        elif status == DeviceStatus.ONLINE:
+            notification = Notification(
+                title=f"Device {device.name} is online",
+                message=f"Device {device.name} is online and connected to the cloud.",
+                type=NotificationType.INFO,
+                device_id=device.id,
+            )
+        else:
+            return None
+        
+        await self.event_bus.publish(NotificationEvent(notification=notification))
+        await self.event_bus.publish(BroadcastMessage(
+            method="deviceUpdated",
+            params={"device": device},
+        ))
+        
+        return device
 
     async def _cleanup_cloud_device(self, device: Device):
         try:

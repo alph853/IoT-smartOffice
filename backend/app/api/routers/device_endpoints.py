@@ -119,3 +119,20 @@ async def delete_device(
 ):
     if not await device_service.delete_device(device_id):
         raise HTTPException(status_code=404, detail="Device not found")
+
+@router.patch("/{device_id}/status")
+async def set_device_status(
+    device_id: int,
+    status_update: dict,
+    device_service: DeviceService = Depends(get_device_service),
+):
+    """Set device status (called by gateway for LWT/error events)"""
+    try:
+        device = await device_service.set_device_status(device_id, status_update.get("status"))
+        if not device:
+            raise HTTPException(status_code=404, detail="Device not found")
+        return device
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid status value")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update device status: {str(e)}")

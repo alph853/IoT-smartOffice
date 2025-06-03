@@ -46,12 +46,11 @@ async def lifespan(container: Container):
 
     # ------------------------- Services -------------------------
 
-    registration_service = container.registration_service()
-    telemetry_service    = container.telemetry_service()
-    control_service      = container.control_service()
-    lwt_service          = container.lwt_service()
+    registration_service  = container.registration_service()
+    telemetry_service     = container.telemetry_service()
+    control_service       = container.control_service()
+    lwt_service           = container.lwt_service()
     ai_multimedia_service = container.ai_multimedia_service()
-    # auto_dispatcher      = container.auto_dispatcher()
 
     await registration_service.start()
     await telemetry_service.start()
@@ -66,15 +65,20 @@ async def lifespan(container: Container):
 
     logger.info("Shutting down...")
     try:
-        await mqtt_gateway_client.disconnect()
-        await mqtt_cloud_client.disconnect()
+        results = await asyncio.gather(
+            mqtt_gateway_client.disconnect(),
+            mqtt_cloud_client.disconnect(),
+            registration_service.stop(),
+            telemetry_service.stop(),
+            control_service.stop(),
+            lwt_service.stop(),
+            ai_multimedia_service.stop(),
+            return_exceptions=True
+        )
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                logger.error(f"Error shutting down service {i}: {result}")
 
-        await registration_service.stop()
-        await telemetry_service.stop()
-        await control_service.stop()
-        await lwt_service.stop()
-        await ai_multimedia_service.stop()
-        
         logger.info("Gateway shutdown successfully")
     except Exception as e:
         logger.error(f"Error shutting down gateway: {e}")

@@ -4,11 +4,10 @@ import enum
 from loguru import logger
 import json
 
-from app.domain.models import Device, Sensor, Actuator, SensorReading, DeviceUpdate, DeviceRegistration, SensorUpdate, ActuatorUpdate, LightingSetParams, FanStateSetParams, DeviceMode
+from app.domain.models import Device, Sensor, Actuator, DeviceUpdate, DeviceRegistration, SensorUpdate, ActuatorUpdate, DeviceMode
 from app.domain.repositories import DeviceRepository
 from app.infra.postgres.db import PostgreSQLConnection
 from app.infra.postgres.scripts.sql_device import *
-from app.domain.models import LightingSetParams
 
 
 class PostgresDeviceRepository(DeviceRepository):
@@ -246,14 +245,6 @@ class PostgresDeviceRepository(DeviceRepository):
             result = await conn.execute(query, device_id)
         return bool(result[-1])
 
-    async def create_sensor_reading(self, sensor_reading: SensorReading) -> SensorReading:
-        pass
-
-    async def get_all_sensor_readings(self) -> List[SensorReading]:
-        pass
-
-    async def get_sensor_reading(self, id: int) -> SensorReading:
-        pass
 
     async def get_sensors_by_device_id(self, device_id: int) -> List[Sensor]:
         async with self.db.acquire() as conn:

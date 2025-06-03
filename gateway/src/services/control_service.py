@@ -83,6 +83,8 @@ class ControlService:
 
     async def _handle_update_actuator(self, event: UpdateActuatorEvent):
         try:
+            print("-"*50)
+            print(event)
             actuator_id = event.actuator_id
             if await self.cache_client.update_actuator(actuator_id, event.actuator_update):
                 response = RPCResponse(status="success", data={"message": "Actuator updated"})

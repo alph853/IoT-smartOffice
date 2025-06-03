@@ -80,7 +80,6 @@ class BroadcastService:
                         await ws.send_text(json.dumps({"error": str(e)}))
                     except:
                         logger.error("Could not send error response to client")
-                    break
         except Exception as e:
             logger.error(f"WebSocket error: {str(e)}")
         finally:

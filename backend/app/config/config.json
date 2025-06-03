@@ -13,7 +13,7 @@
         "username": "trung.do853@hcmut.edu.vn",
         "password": "12345678",
         "device_id": "f5883950-2739-11f0-a3c9-ab0d8999f561",
-        "device_name": "IoT Gateway",
+        "device_name": "Smart IoT Gateway",
         "api": {
             "ws_url": "wss://app.coreiot.io/api/ws/plugins/telemetry?token=",
             "login_url": "https://app.coreiot.io/api/auth/login",

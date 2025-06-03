@@ -48,23 +48,23 @@ class PostgresNotificationRepository(NotificationRepository):
     async def mark_all_as_read(self) -> bool:
         async with self.db.pool.acquire() as conn:
             query = NOTIFICATION_MARK_ALL_AS_READ
-            result = await conn.fetch(query)
-            return int(result.split()[-1]) != 0
+            result = await conn.execute(query)
+            return int(result.split(' ')[-1]) != 0
 
     async def mark_as_read(self, notification_id: str) -> bool:
         async with self.db.pool.acquire() as conn:
             query = NOTIFICATION_MARK_AS_READ
-            result = await conn.fetch(query, notification_id)
-            return True if result else False
+            result = await conn.execute(query, notification_id)
+            return int(result.split(' ')[-1]) != 0
 
     async def delete_all_notifications(self) -> bool:
         async with self.db.pool.acquire() as conn:
             query = NOTIFICATION_DELETE_ALL
-            result = await conn.fetch(query)
-            return int(result.split()[-1]) != 0
+            result = await conn.execute(query)
+            return int(result.split(' ')[-1]) != 0
 
     async def delete_notification(self, notification_id: str) -> bool:
         async with self.db.pool.acquire() as conn:
             query = NOTIFICATION_DELETE
-            result = await conn.fetch(query, notification_id)
-            return True if result else False
+            result = await conn.execute(query, notification_id)
+            return int(result.split(' ')[-1]) != 0

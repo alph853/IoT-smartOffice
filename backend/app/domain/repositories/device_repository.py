@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from app.domain.models import Device, Sensor, Actuator, SensorReading
+from app.domain.models import Device, Sensor, Actuator
 
 
 class DeviceRepository(ABC):
@@ -58,10 +58,6 @@ class DeviceRepository(ABC):
 
     @abstractmethod
     async def create_actuator(self, actuator: Actuator) -> Actuator:
-        pass
-
-    @abstractmethod
-    async def create_sensor_reading(self, sensor_reading: SensorReading) -> SensorReading:
         pass
 
     @abstractmethod

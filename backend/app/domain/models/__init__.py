@@ -1,9 +1,18 @@
-from .device import Device, DeviceRegistration, Sensor, Actuator, SensorReading, DeviceMode, DeviceStatus, DeviceUpdate, ActuatorUpdate, SensorUpdate
-from .notification import Notification, NotificationType
+from .device import Device, DeviceUpdate, DeviceRegistration, Sensor, Actuator, SensorUpdate, ActuatorUpdate, DeviceStatus, DeviceMode, Gateway
 from .office import Office
-from .control import LightingSet, RPCRequest, RPCResponse, FanStateSet, COLOR_MAP, SupportedColor, BroadcastMessage, LightingSetParams, FanStateSetParams
+from .notification import Notification, NotificationType
+from .schedule import Schedule, ScheduleType, ScheduleCreate, ScheduleUpdate, DayOfWeek
+from .control import BroadcastMessage, RPCRequest, RPCResponse, LightingSet, FanStateSet, SupportedColor, COLOR_MAP
+from .multimedia import MultimediaData, MultimediaResponse, Image
 
-
-__all__ = ["Device", "DeviceRegistration", "Sensor", "Actuator", "SensorReading", "DeviceMode", "DeviceStatus", "DeviceUpdate", "Notification", "NotificationType", "Office", "LightingSet", "RPCRequest", "RPCResponse", "ActuatorUpdate", "SensorUpdate", "FanStateSet", "COLOR_MAP", "SupportedColor", "BroadcastMessage", "LightingSetParams", "FanStateSetParams"]
+__all__ = [
+    "Device", "DeviceUpdate", "DeviceRegistration", "Sensor", "Actuator", 
+    "SensorUpdate", "ActuatorUpdate", "DeviceStatus", "DeviceMode", "Gateway",
+    "Office",
+    "Notification", "NotificationType",
+    "Schedule", "ScheduleType", "ScheduleCreate", "ScheduleUpdate", "DayOfWeek",
+    "BroadcastMessage", "RPCRequest", "RPCResponse", "LightingSet", "FanStateSet", "SupportedColor", "COLOR_MAP",
+    "MultimediaData", "MultimediaResponse", "Image"
+]
 
 

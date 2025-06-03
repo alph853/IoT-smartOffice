@@ -34,6 +34,10 @@ class CacheClientRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_device_by_mac(self, mac_address: str) -> Device | None:
+        pass
+
+    @abstractmethod
     async def get_mode(self, device_id: str) -> DeviceMode:
         pass
     # ----------------------------------------------------------
