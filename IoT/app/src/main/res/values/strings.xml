@@ -92,6 +92,6 @@
     <string-array name="actuator_modes">
         <item>Manual</item>
         <item>Auto</item>
-        <item>Schedule</item>
+        <item>Scheduled</item>
     </string-array>
 </resources>

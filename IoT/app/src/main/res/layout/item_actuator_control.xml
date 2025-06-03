@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/device_card"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -20,12 +21,12 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_marginTop="8dp"
+            android:contentDescription="@string/device_icon_desc"
             android:src="@drawable/ic_light_sensor"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:tint="@android:color/white"
-            android:contentDescription="@string/device_icon_desc" />
+            app:tint="@android:color/white" />
 
         <!-- Device Name -->
         <TextView
@@ -54,35 +55,35 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/device_name" />
 
-<!--        &lt;!&ndash; Mode Selection Dropdown &ndash;&gt;-->
-<!--        <Spinner-->
-<!--            android:id="@+id/mode_spinner"-->
-<!--            android:layout_width="0dp"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:layout_marginTop="12dp"-->
-<!--            android:layout_marginEnd="16dp"-->
-<!--            android:entries="@array/actuator_modes"-->
-<!--            android:backgroundTint="@android:color/white"-->
-<!--            app:layout_constraintStart_toStartOf="parent"-->
-<!--            app:layout_constraintEnd_toStartOf="@id/device_switch"-->
-<!--            app:layout_constraintTop_toBottomOf="@id/device_status" />-->
+        <!--        &lt;!&ndash; Mode Selection Dropdown &ndash;&gt;-->
+        <!--        <Spinner-->
+        <!--            android:id="@+id/mode_spinner"-->
+        <!--            android:layout_width="0dp"-->
+        <!--            android:layout_height="wrap_content"-->
+        <!--            android:layout_marginTop="12dp"-->
+        <!--            android:layout_marginEnd="16dp"-->
+        <!--            android:entries="@array/actuator_modes"-->
+        <!--            android:backgroundTint="@android:color/white"-->
+        <!--            app:layout_constraintStart_toStartOf="parent"-->
+        <!--            app:layout_constraintEnd_toStartOf="@id/device_switch"-->
+        <!--            app:layout_constraintTop_toBottomOf="@id/device_status" />-->
 
         <!-- Mode Selection Spinner -->
+
+        <!-- Toggle Switch -->
         <Spinner
             android:id="@+id/mode_spinner"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:layout_marginEnd="16dp"
-            android:entries="@array/actuator_modes"
-            android:spinnerMode="dropdown"
-            android:popupBackground="@color/card_black"
+            android:background="@null"
             android:backgroundTint="@android:color/white"
+            android:entries="@array/actuator_modes"
+            android:popupBackground="@color/card_black"
+            android:spinnerMode="dropdown"
+            app:layout_constraintBottom_toBottomOf="@+id/device_switch"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/device_switch"
-            app:layout_constraintTop_toBottomOf="@id/device_status" />
+            app:layout_constraintTop_toTopOf="@+id/device_switch" />
 
-        <!-- Toggle Switch -->
         <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/device_switch"
             android:layout_width="wrap_content"

@@ -29,6 +29,7 @@ import com.example.iot.domain.models.MCU
 import com.example.iot.domain.models.Component
 import com.example.iot.domain.managers.WebSocketManager
 import okhttp3.*
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 
 /**
@@ -654,7 +655,7 @@ class ControlFragment : Fragment() {
     }
 
     private fun onMcuToggled(mcu: MCU, isOn: Boolean) {
-        val url = if (isOn) {
+        val url = if (!isOn) {
             "https://10diemiot.ngrok.io/devices/enable/${mcu.id}"
         } else {
             "https://10diemiot.ngrok.io/devices/disable/${mcu.id}"
@@ -662,11 +663,12 @@ class ControlFragment : Fragment() {
         val client = OkHttpClient()
         val request = Request.Builder()
             .url(url)
-            .post(RequestBody.create(null, ByteArray(0)))
+            .patch(ByteArray(0).toRequestBody())
             .build()
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 requireActivity().runOnUiThread {
+                    android.util.Log.d("ControlFragment", "Failed to ${if (isOn) "enable" else "disable"} MCU: ${e.message}", e)
                     Toast.makeText(requireContext(), "Failed to ${if (isOn) "enable" else "disable"} MCU: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -697,29 +699,81 @@ class ControlFragment : Fragment() {
     }
 
     private fun onDeviceModeChanged(device: Device, newMode: String) {
-        // Update device mode in the list
-        val devices = getDevicesForCurrentRoom().map {
-            if (it.id == device.id) it.copy(mode = newMode) else it
-        }
-        deviceAdapter.updateDevices(devices)
-        roomDevicesMap[currentRoom]?.clear()
-        roomDevicesMap[currentRoom]?.addAll(devices)
+        try {
+            // Update device mode in the list
+            val devices = getDevicesForCurrentRoom().map {
+                if (it.id == device.id) it.copy(mode = newMode) else it
+            }
+            deviceAdapter.updateDevices(devices)
+            roomDevicesMap[currentRoom]?.clear()
+            roomDevicesMap[currentRoom]?.addAll(devices)
 
-        // Send mode change to WebSocket
-        WebSocketManager.sendMessage(com.google.gson.JsonObject().apply {
-            addProperty("method", "setMode")
-            add("params", com.google.gson.JsonObject().apply {
-                addProperty("actuator_id", device.id.split("_")[1].toInt())
-                addProperty("mode", newMode.lowercase())
+            // Parse actuator ID safely
+            val deviceIdParts = device.id.split("_")
+            if (deviceIdParts.size != 2) {
+                throw IllegalArgumentException("Invalid device ID format: ${device.id}")
+            }
+            
+            val actuatorId = deviceIdParts[1].toIntOrNull()
+            if (actuatorId == null) {
+                throw IllegalArgumentException("Invalid actuator ID: ${deviceIdParts[1]}")
+            }
+
+            // Find and update the actuator
+            var actuatorFound = false
+            roomsList.forEach { room ->
+                room.devices.forEach { mcu ->
+                    mcu.actuators.find { it.id == actuatorId }?.let { actuator ->
+                        // Update the actuator's mode while preserving other properties
+                        val updatedActuator = actuator.copy(
+                            mode = newMode,
+                            status = actuator.status ?: "Online" // Use default value if status is null
+                        )
+                        val actuatorIndex = mcu.actuators.indexOf(actuator)
+                        if (actuatorIndex != -1) {
+                            mcu.actuators[actuatorIndex] = updatedActuator
+                            actuatorFound = true
+                        }
+                    }
+                }
+            }
+
+            if (!actuatorFound) {
+                throw IllegalStateException("Actuator with ID $actuatorId not found")
+            }
+
+            // Send mode change to WebSocket
+            WebSocketManager.sendMessage(com.google.gson.JsonObject().apply {
+                addProperty("method", "setMode")
+                add("params", com.google.gson.JsonObject().apply {
+                    addProperty("actuator_id", actuatorId)
+                    addProperty("mode", newMode.lowercase())
+                })
             })
-        })
 
-        // Show feedback
-        Toast.makeText(
-            requireContext(),
-            "${device.name} mode changed to $newMode",
-            Toast.LENGTH_SHORT
-        ).show()
+            // Show feedback
+            Toast.makeText(
+                requireContext(),
+                "${device.name} mode changed to $newMode",
+                Toast.LENGTH_SHORT
+            ).show()
+        } catch (e: Exception) {
+            // Log the error
+            android.util.Log.e("ControlFragment", "Error changing device mode: ${e.message}", e)
+            
+            // Show error message to user
+            Toast.makeText(
+                requireContext(),
+                "Failed to change mode: ${e.message}",
+                Toast.LENGTH_SHORT
+            ).show()
+            
+            // Revert the UI change
+            val devices = getDevicesForCurrentRoom()
+            deviceAdapter.updateDevices(devices)
+            roomDevicesMap[currentRoom]?.clear()
+            roomDevicesMap[currentRoom]?.addAll(devices)
+        }
     }
 
     companion object {

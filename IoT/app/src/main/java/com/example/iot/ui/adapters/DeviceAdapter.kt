@@ -172,6 +172,7 @@ class DeviceAdapter(
         val deviceStatus: TextView = itemView.findViewById(R.id.led4rgb_status)
         val colorPreview: View = itemView.findViewById(R.id.color_preview)
         val setButton: Button = itemView.findViewById(R.id.set_button)
+        val modeSpinner: Spinner = itemView.findViewById(R.id.mode_spinner)
         private var lastClickTime = 0L
 
         fun bind(device: Device) {
@@ -192,6 +193,43 @@ class DeviceAdapter(
             colorPreview.backgroundTintList = android.content.res.ColorStateList.valueOf(
                 if (device.isOn) android.graphics.Color.parseColor("#FF6B35") else android.graphics.Color.GRAY
             )
+
+            // Set up mode spinner
+            try {
+                modeSpinner.onItemSelectedListener = null
+                val currentMode = device.mode ?: "manual"
+                val modes = itemView.context.resources.getStringArray(R.array.actuator_modes)
+                
+                // Create and set custom adapter for spinner
+                val adapter = ArrayAdapter.createFromResource(
+                    itemView.context,
+                    R.array.actuator_modes,
+                    R.layout.item_spinner_mode
+                ).apply {
+                    setDropDownViewResource(R.layout.item_spinner_mode_dropdown)
+                }
+                modeSpinner.adapter = adapter
+
+                // Set initial selection
+                val position = modes.map { it.lowercase() }.indexOf(currentMode.lowercase())
+                if (position != -1) {
+                    modeSpinner.setSelection(position)
+                }
+
+                // Set up spinner listener
+                modeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                    override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                        val selectedMode = parent?.getItemAtPosition(position).toString().lowercase()
+                        if (selectedMode != device.mode?.lowercase()) {
+                            onModeChangedListener?.invoke(device, selectedMode)
+                        }
+                    }
+
+                    override fun onNothingSelected(parent: AdapterView<*>?) {}
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
 
             // Set card click listener to open dialog
             deviceCard.setOnClickListener {
