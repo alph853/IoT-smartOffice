@@ -31,6 +31,12 @@ import java.io.IOException
 import com.google.gson.Gson
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import com.example.iot.domain.managers.WebSocketManager
+import java.net.URL
+import java.io.InputStreamReader
+import com.google.gson.reflect.TypeToken
+import com.example.iot.domain.managers.SensorManager
+import com.example.iot.domain.managers.ActuatorManager
 
 class MCUDetailActivity : AppCompatActivity() {
 
@@ -147,6 +153,79 @@ class MCUDetailActivity : AppCompatActivity() {
 
         // Setup sensor and actuator RecyclerViews
         setupSensorAndActuatorSections()
+
+        // Register WebSocket device update callback
+        WebSocketManager.setOnDeviceUpdateListener {
+            runOnUiThread {
+                // First, fetch fresh data from the server
+                val client = OkHttpClient()
+                val request = Request.Builder()
+                    .url("https://10diemiot.ngrok.io/office/?return_components=true")
+                    .get()
+                    .build()
+
+                client.newCall(request).enqueue(object : Callback {
+                    override fun onFailure(call: Call, e: IOException) {
+                        android.util.Log.e("MCUDetailActivity", "Error fetching updated data: ${e.message}", e)
+                    }
+
+                    override fun onResponse(call: Call, response: Response) {
+                        if (response.isSuccessful) {
+                            val json = response.body?.string()
+                            if (json != null) {
+                                // Parse JSON and create Room objects
+                                val gson = Gson()
+                                val roomListType = object : TypeToken<List<Room>>() {}.type
+                                val rooms: List<Room> = gson.fromJson(json, roomListType)
+
+                                // Update RoomManager with fresh data
+                                runOnUiThread {
+                                    RoomManager.getRooms().clear()
+                                    SensorManager.getSensors().clear()
+                                    ActuatorManager.getActuators().clear()
+
+                                    rooms.forEach { room ->
+                                        RoomManager.addRoom(room)
+                                        room.devices.forEach { device ->
+                                            device.location = "O${device.office_id}-${room.building}-${room.room}"
+                                            device.sensors.forEach { sensor ->
+                                                SensorManager.addSensor(sensor)
+                                            }
+                                            device.actuators.forEach { actuator ->
+                                                ActuatorManager.addActuator(actuator)
+                                            }
+                                        }
+                                    }
+
+                                    // Get the updated room and MCU
+                                    val updatedRoom = RoomManager.getRoomByID(currentRoom.id)
+                                    if (updatedRoom != null) {
+                                        currentRoom = updatedRoom
+                                        val updatedMCU = currentRoom.getMCUs().find { it.id == mcu.id }
+                                        if (updatedMCU != null) {
+                                            // Update the MCU data
+                                            mcu = updatedMCU.copy()
+                                            originalMCU = updatedMCU
+                                            
+                                            // Refresh the UI
+                                            displayMCUInfo()
+                                            
+                                            // Update sensor and actuator adapters
+                                            sensorAdapter.updateSensors(mcu.sensors)
+                                            actuatorAdapter.updateActuators(mcu.actuators)
+                                            
+                                            // Force refresh of all views
+                                            findViewById<RecyclerView>(R.id.rvSensors).invalidate()
+                                            findViewById<RecyclerView>(R.id.rvActuators).invalidate()
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                })
+            }
+        }
     }
 
     private fun setupClickableItems() {
@@ -222,11 +301,45 @@ class MCUDetailActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tvName).text = mcu.name
         findViewById<TextView>(R.id.tvDescription).text = mcu.description
         findViewById<TextView>(R.id.tvLocation).text = mcu.location
-        findViewById<TextView>(R.id.tvRegisterAt).text = mcu.registered_at
+        
+        // Log the timestamp formats
+        android.util.Log.d("MCUDetailActivity", "Registered at: ${mcu.registered_at}")
+        android.util.Log.d("MCUDetailActivity", "Last seen at: ${mcu.last_seen_at}")
+        
+        findViewById<TextView>(R.id.tvRegisterAt).text = formatTimestamp(mcu.registered_at)
         findViewById<TextView>(R.id.tvMacAddress).text = mcu.mac_addr
         findViewById<TextView>(R.id.tvFirmwareVersion).text = mcu.fw_version
-        findViewById<TextView>(R.id.tvLastSeenAs).text = mcu.last_seen_at
+        findViewById<TextView>(R.id.tvLastSeenAs).text = formatTimestamp(mcu.last_seen_at)
         findViewById<TextView>(R.id.tvModel).text = mcu.model
+    }
+
+    private fun formatTimestamp(timestamp: String): String {
+        return try {
+            // Extract the time and date parts from the server timestamp
+            val parts = timestamp.split("T")
+            if (parts.size == 2) {
+                val datePart = parts[0]  // yyyy-MM-dd
+                val timePart = parts[1].split(".")[0]  // HH:mm:ss (remove milliseconds if present)
+                
+                // Split date into components
+                val dateComponents = datePart.split("-")
+                if (dateComponents.size == 3) {
+                    val year = dateComponents[0]
+                    val month = dateComponents[1]
+                    val day = dateComponents[2]
+                    
+                    // Return in the desired format: HH:mm:ss dd/MM/yyyy
+                    "$timePart $day/$month/$year"
+                } else {
+                    timestamp
+                }
+            } else {
+                timestamp
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MCUDetailActivity", "Error formatting timestamp: $timestamp", e)
+            timestamp
+        }
     }
 
     private fun showEditDialog(title: String, currentValue: String, onConfirm: (String) -> Unit) {

@@ -13,9 +13,12 @@ import com.example.iot.domain.models.Actuator
 import com.example.iot.domain.models.MCU
 import com.example.iot.R
 
-class ActuatorAdapter(
-    private val actuators: List<Actuator>
-) : RecyclerView.Adapter<ActuatorAdapter.ActuatorViewHolder>() {
+class ActuatorAdapter(private var actuators: List<Actuator>) : RecyclerView.Adapter<ActuatorAdapter.ActuatorViewHolder>() {
+
+    fun updateActuators(newActuators: List<Actuator>) {
+        actuators = newActuators
+        notifyDataSetChanged()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ActuatorViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_actuator, parent, false)

@@ -14,7 +14,7 @@
         android:src="@drawable/ic_notifications"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:tint="@color/primary_green" />
+        app:tint="@color/green" />
 
     <!-- Title -->
     <TextView
@@ -58,14 +58,14 @@
         app:layout_constraintTop_toBottomOf="@id/notification_title" />
 
     <!-- Read/Unread Indicator -->
-    <View
-        android:id="@+id/indicator"
-        android:layout_width="14dp"
-        android:layout_height="14dp"
-        android:background="@drawable/indicator_unread"
-        app:layout_constraintBottom_toBottomOf="@id/notification_summary"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/notification_summary"
-        app:layout_constraintTop_toTopOf="@+id/notification_summary" />
+<!--    <View-->
+<!--        android:id="@+id/indicator"-->
+<!--        android:layout_width="14dp"-->
+<!--        android:layout_height="14dp"-->
+<!--        android:background="@drawable/indicator_unread"-->
+<!--        app:layout_constraintBottom_toBottomOf="@id/notification_summary"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        app:layout_constraintStart_toEndOf="@+id/notification_summary"-->
+<!--        app:layout_constraintTop_toTopOf="@+id/notification_summary" />-->
 
 </androidx.constraintlayout.widget.ConstraintLayout> 

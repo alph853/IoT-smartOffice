@@ -45,7 +45,7 @@ class NotificationAdapter(
         private val title: TextView = itemView.findViewById(R.id.notification_title)
         private val summary: TextView = itemView.findViewById(R.id.notification_summary)
         private val time: TextView = itemView.findViewById(R.id.notification_time)
-        private val indicator: View = itemView.findViewById(R.id.indicator)
+//        private val indicator: View = itemView.findViewById(R.id.indicator)
         private val container: ConstraintLayout = itemView as ConstraintLayout
 
         fun bind(notification: Notification) {
@@ -53,12 +53,12 @@ class NotificationAdapter(
             title.text = notification.title
             summary.text = notification.message
             time.text = notification.ts
-            if (!notification.read_status) {
-                indicator.visibility = View.VISIBLE
-                indicator.setBackgroundResource(R.drawable.indicator_unread)
-            } else {
-                indicator.visibility = View.INVISIBLE
-            }
+//            if (!notification.read_status) {
+//                indicator.visibility = View.VISIBLE
+//                indicator.setBackgroundResource(R.drawable.indicator_unread)
+//            } else {
+//                indicator.visibility = View.INVISIBLE
+//            }
             // Optional: giảm opacity nếu đã đọc
             itemView.alpha = if (notification.read_status) 0.6f else 1.0f
         }
@@ -99,10 +99,10 @@ class NotificationAdapter(
             time.setTextSize(TypedValue.COMPLEX_UNIT_PX, timeTextSize)
 
             // Apply indicator size
-            val indicatorParams = indicator.layoutParams
-            indicatorParams.width = indicatorSize
-            indicatorParams.height = indicatorSize
-            indicator.layoutParams = indicatorParams
+//            val indicatorParams = indicator.layoutParams
+//            indicatorParams.width = indicatorSize
+//            indicatorParams.height = indicatorSize
+//            indicator.layoutParams = indicatorParams
 
             // Apply summary size and margins
             summary.setTextSize(TypedValue.COMPLEX_UNIT_PX, summaryTextSize)

@@ -16,6 +16,8 @@ import com.example.iot.domain.models.Device
 import com.example.iot.domain.models.DeviceType
 import com.example.iot.domain.models.Room
 import com.example.iot.domain.managers.RoomManager
+import com.example.iot.domain.managers.SensorManager
+import com.example.iot.domain.managers.ActuatorManager
 import com.example.iot.domain.models.SensorData
 import com.example.iot.domain.models.SensorType
 import com.example.iot.domain.models.Threshold
@@ -31,6 +33,9 @@ import com.example.iot.domain.managers.WebSocketManager
 import okhttp3.*
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import java.io.InputStreamReader
 
 /**
  * ControlFragment - Displays and controls actuators from all devices (MCUs) in each room
@@ -92,19 +97,69 @@ class ControlFragment : Fragment() {
             // Register WebSocket device update callback
             WebSocketManager.setOnDeviceUpdateListener {
                 requireActivity().runOnUiThread {
-                    // Reinitialize all data
-                    initializeDeviceDataFromRooms()
-                    initializeMcuData()
-                    setupDynamicTabs()
-                    
-                    // Update the current room's devices if we have a selected room
-                    if (currentRoom.isNotEmpty()) {
-                        showRoom(currentRoom)
-                    }
-                    
-                    // Notify adapters of data changes
-                    deviceAdapter.notifyDataSetChanged()
-                    mcuAdapter.notifyDataSetChanged()
+                    // First, fetch fresh data from the server
+                    val client = OkHttpClient()
+                    val request = Request.Builder()
+                        .url("https://10diemiot.ngrok.io/office/?return_components=true")
+                        .get()
+                        .build()
+
+                    client.newCall(request).enqueue(object : Callback {
+                        override fun onFailure(call: Call, e: IOException) {
+                            android.util.Log.e("ControlFragment", "Error fetching updated data: ${e.message}", e)
+                        }
+
+                        override fun onResponse(call: Call, response: Response) {
+                            if (response.isSuccessful) {
+                                val json = response.body?.string()
+                                if (json != null) {
+                                    // Parse JSON and create Room objects
+                                    val gson = Gson()
+                                    val roomListType = object : TypeToken<List<Room>>() {}.type
+                                    val rooms: List<Room> = gson.fromJson(json, roomListType)
+
+                                    // Update RoomManager with fresh data
+                                    requireActivity().runOnUiThread {
+                                        RoomManager.getRooms().clear()
+                                        SensorManager.getSensors().clear()
+                                        ActuatorManager.getActuators().clear()
+
+                                        rooms.forEach { room ->
+                                            RoomManager.addRoom(room)
+                                            room.devices.forEach { device ->
+                                                device.location = "O${device.office_id}-${room.building}-${room.room}"
+                                                device.sensors.forEach { sensor ->
+                                                    SensorManager.addSensor(sensor)
+                                                }
+                                                device.actuators.forEach { actuator ->
+                                                    ActuatorManager.addActuator(actuator)
+                                                }
+                                            }
+                                        }
+
+                                        // Now reinitialize all data with fresh data
+                                        initializeDeviceDataFromRooms()
+                                        initializeMcuData()
+                                        initializeThresholds()
+                                        setupDynamicTabs()
+                                        
+                                        // Update the current room's devices if we have a selected room
+                                        if (currentRoom.isNotEmpty()) {
+                                            showRoom(currentRoom)
+                                        }
+                                        
+                                        // Notify adapters of data changes
+                                        deviceAdapter.notifyDataSetChanged()
+                                        mcuAdapter.notifyDataSetChanged()
+                                        
+                                        // Force refresh of all views
+                                        devicesGrid.invalidate()
+                                        devicesGrid.requestLayout()
+                                    }
+                                }
+                            }
+                        }
+                    })
                 }
             }
             // Start sensor simulation
@@ -655,7 +710,7 @@ class ControlFragment : Fragment() {
     }
 
     private fun onMcuToggled(mcu: MCU, isOn: Boolean) {
-        val url = if (!isOn) {
+        val url = if (isOn) {
             "https://10diemiot.ngrok.io/devices/enable/${mcu.id}"
         } else {
             "https://10diemiot.ngrok.io/devices/disable/${mcu.id}"
@@ -679,12 +734,7 @@ class ControlFragment : Fragment() {
                         val mcus = getMcusForCurrentRoom().map {
                             if (it.id == mcu.id) it.copy(status = if (isOn) "Online" else "Offline") else it
                         }
-                        mcuAdapter = MCUAdapterControl(mcus) { mcu, isOn ->
-                            onMcuToggled(mcu, isOn)
-                        }
-                        mcuGrid.adapter = mcuAdapter
-                        roomMcusMap[currentRoom]?.clear()
-                        roomMcusMap[currentRoom]?.addAll(mcus)
+
                         Toast.makeText(requireContext(), "MCU ${if (isOn) "enabled" else "disabled"}", Toast.LENGTH_SHORT).show()
                     } else {
                         Toast.makeText(requireContext(), "Failed to ${if (isOn) "enable" else "disable"} MCU", Toast.LENGTH_SHORT).show()

@@ -181,7 +181,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Name"
-                        android:layout_weight="1"
                         android:textColor="@color/white"
                         android:textSize="14sp"
                         android:textStyle="bold"/>
@@ -189,12 +188,15 @@
 
                     <TextView
                         android:id="@+id/tvName"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="20dp"
                         android:text="Yolo Uno 1"
                         android:textColor="@color/grey"
                         android:textSize="14sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        android:gravity="end" />
                 </LinearLayout>
 
                 <View
@@ -219,7 +221,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Description"
-                        android:layout_weight="1"
                         android:textColor="@color/white"
                         android:textSize="14sp"
                         android:textStyle="bold"/>
@@ -227,12 +228,15 @@
 
                     <TextView
                         android:id="@+id/tvDescription"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="20dp"
+                        android:layout_weight="1"
                         android:text="Device"
                         android:textColor="@color/grey"
                         android:textSize="14sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        android:gravity="end" />
 
 
                 </LinearLayout>
@@ -264,7 +268,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Location"
-                        android:layout_weight="1"
                         android:textColor="@color/white"
                         android:textSize="14sp"
                         android:textStyle="bold"/>
@@ -272,12 +275,15 @@
 
                     <TextView
                         android:id="@+id/tvLocation"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="20dp"
+                        android:layout_weight="1"
                         android:text="Location"
                         android:textColor="@color/grey"
                         android:textSize="14sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        android:gravity="end" />
 
 
                 </LinearLayout>
@@ -310,19 +316,21 @@
                         android:layout_height="wrap_content"
                         android:text="Register at"
                         android:textColor="@color/white"
-                        android:layout_weight="1"
                         android:textSize="14sp"
                         android:textStyle="bold"/>
 
 
                     <TextView
                         android:id="@+id/tvRegisterAt"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="20dp"
+                        android:layout_weight="1"
                         android:text="Register at"
                         android:textColor="@color/grey"
                         android:textSize="14sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        android:gravity="end" />
 
 
                 </LinearLayout>
@@ -349,19 +357,21 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Mac address"
-                        android:layout_weight="1"
                         android:textColor="@color/white"
                         android:textSize="14sp"
                         android:textStyle="bold"/>
 
                     <TextView
                         android:id="@+id/tvMacAddress"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="20dp"
+                        android:layout_weight="1"
                         android:text="Mac address"
                         android:textColor="@color/grey"
                         android:textSize="14sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        android:gravity="end" />
 
 
                 </LinearLayout>
@@ -388,19 +398,21 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Firmware version"
-                        android:layout_weight="1"
                         android:textColor="@color/white"
                         android:textSize="14sp"
                         android:textStyle="bold"/>
 
                     <TextView
                         android:id="@+id/tvFirmwareVersion"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="20dp"
+                        android:layout_weight="1"
                         android:text="Firmware version"
                         android:textColor="@color/grey"
                         android:textSize="14sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        android:gravity="end" />
 
 
                 </LinearLayout>
@@ -428,18 +440,20 @@
                         android:layout_height="wrap_content"
                         android:text="Last seen"
                         android:textColor="@color/white"
-                        android:layout_weight="1"
                         android:textSize="14sp"
                         android:textStyle="bold"/>
 
                     <TextView
                         android:id="@+id/tvLastSeenAs"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="20dp"
+                        android:layout_weight="1"
                         android:text="Last seen"
                         android:textColor="@color/grey"
                         android:textSize="14sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        android:gravity="end" />
 
 
                 </LinearLayout>
@@ -467,18 +481,21 @@
                         android:layout_height="wrap_content"
                         android:text="Model"
                         android:textColor="@color/white"
-                        android:layout_weight="1"
+
                         android:textSize="14sp"
                         android:textStyle="bold"/>
 
                     <TextView
                         android:id="@+id/tvModel"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="20dp"
+                        android:layout_weight="1"
                         android:text="Model"
                         android:textColor="@color/grey"
                         android:textSize="14sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        android:gravity="end" />
 
 
                 </LinearLayout>

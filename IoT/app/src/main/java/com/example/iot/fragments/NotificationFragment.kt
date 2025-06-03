@@ -184,16 +184,16 @@ class NotificationFragment : Fragment() {
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     requireActivity().runOnUiThread {
-                        android.widget.Toast.makeText(requireContext(), "Failed to delete all notifications: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                        android.widget.Toast.makeText(requireContext(), "on Failure Failed to delete all notifications: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
                     }
                 }
                 override fun onResponse(call: Call, response: Response) {
                     requireActivity().runOnUiThread {
-                        if (response.isSuccessful) {
+                        if (response.isSuccessful || response.code == 204 || response.code == 404) {
                             viewModel.deleteAll()
                             android.widget.Toast.makeText(requireContext(), "Deleted all notifications", android.widget.Toast.LENGTH_SHORT).show()
                         } else {
-                            android.widget.Toast.makeText(requireContext(), "Failed to delete all notifications", android.widget.Toast.LENGTH_SHORT).show()
+                            android.widget.Toast.makeText(requireContext(), response.code.toString(), android.widget.Toast.LENGTH_SHORT).show()
                         }
                     }
                 }

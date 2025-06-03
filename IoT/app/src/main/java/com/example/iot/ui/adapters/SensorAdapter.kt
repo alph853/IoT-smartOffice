@@ -13,9 +13,12 @@ import com.example.iot.domain.models.MCU
 import com.example.iot.domain.models.Sensor
 import com.example.iot.R
 
-class SensorAdapter(
-    private val sensors: List<Sensor>
-) : RecyclerView.Adapter<SensorAdapter.SensorViewHolder>() {
+class SensorAdapter(private var sensors: List<Sensor>) : RecyclerView.Adapter<SensorAdapter.SensorViewHolder>() {
+
+    fun updateSensors(newSensors: List<Sensor>) {
+        sensors = newSensors
+        notifyDataSetChanged()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SensorViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_sensor, parent, false)

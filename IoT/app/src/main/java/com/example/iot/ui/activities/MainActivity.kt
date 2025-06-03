@@ -76,6 +76,20 @@ class MainActivity : AppCompatActivity() {
             // Refresh device list
             roomAdapter.notifyDataSetChanged()
             updateActiveCount()
+            
+            // Reload all fragments if they exist
+            supportFragmentManager.fragments.forEach { fragment ->
+                when (fragment) {
+                    is ControlFragment -> {
+                        // Force reload of ControlFragment
+                        supportFragmentManager.beginTransaction()
+                            .detach(fragment)
+                            .attach(fragment)
+                            .commit()
+                    }
+                    // Add other fragment types here if needed
+                }
+            }
         }
           WebSocketManager.setOnNotificationUpdateListener {
             // Notifications are now automatically updated through NotificationManager listeners
