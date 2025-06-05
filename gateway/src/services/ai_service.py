@@ -16,7 +16,7 @@ class AIMultimediaService:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.poll_interval = 0.5
         self.diff_threshold = 15.0
-        self.esp32_cam_url = "http://192.168.1.247/capture"
+        self.esp32_cam_url = "http://192.168.1.248/capture"
 
         # Load the CLIP model (ViT‐B/32) and its preprocessing pipeline
         self.clip_model, self.preprocess = clip.load("ViT-B/32", device=self.device)

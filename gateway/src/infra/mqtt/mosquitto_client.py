@@ -155,7 +155,9 @@ class MosquittoClient(MqttGatewayClientRepository):
         if device_id:
             topic = self.topics['control_commands']['topic'].format(device_id=device_id)
             await self.client.publish(topic, json.dumps(payload))
-            return await self._wait_for_response(event.request_id)
+            if event.waiting_response:
+                return await self._wait_for_response(event.request_id)
+            return True
         return False
 
     async def set_fan_state(self, event: SetFanStateEvent) -> bool:
@@ -168,7 +170,9 @@ class MosquittoClient(MqttGatewayClientRepository):
             return False
         topic = self.topics['control_commands']['topic'].format(device_id=device_id)
         await self.client.publish(topic, json.dumps(payload))
-        return await self._wait_for_response(event.request_id)
+        if event.waiting_response:
+            return await self._wait_for_response(event.request_id)
+        return True
 
     async def send_test_command(self, event: RPCTestEvent) -> bool:
         payload = {
@@ -180,7 +184,9 @@ class MosquittoClient(MqttGatewayClientRepository):
             return False
         topic = self.topics['control_commands']['topic'] + str(device_id)
         await self.client.publish(topic, json.dumps(payload))
-        return await self._wait_for_response(event.request_id)
+        if event.waiting_response:
+            return await self._wait_for_response(event.request_id)
+        return True
 
 
     # -------------------------------------------------------------

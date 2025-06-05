@@ -11,7 +11,7 @@ GET_NOTIFICATION_BY_ID = """
 """
 
 NOTIFICATION_CREATE = """
-    INSERT INTO notification (title, message, type, device_id, read_status) VALUES ($1, $2, $3, $4, $5) RETURNING id;
+    INSERT INTO notification (title, message, type, device_id, read_status, ts) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, title, message, type, device_id, read_status, ts;
 """
 
 NOTIFICATION_MARK_ALL_AS_READ = """

@@ -26,9 +26,9 @@ class PostgresNotificationRepository(NotificationRepository):
                                         notification.message,
                                         notification.type,
                                         notification.device_id,
-                                        notification.read_status)
-                notification.id = result[0]['id']
-                return notification
+                                        notification.read_status,
+                                        notification.ts)
+                return Notification(**result[0])
         except Exception as e:
             logger.error(f"Error creating notification: {e}")
             return None

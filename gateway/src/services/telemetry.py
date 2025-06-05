@@ -6,8 +6,8 @@ from src.domain.events import EventBusInterface, TelemetryEvent, SetLightingEven
 from src.domain.models import DeviceMode, DeviceStatus, Actuator, Device
 
 
-LUMINOUSITY_MIN = 0
-LUMINOUSITY_MAX = 1
+LUMINOUSITY_MIN = 0.1
+LUMINOUSITY_MAX = 0.8
 TEMPERATURE_MIN = 0
 TEMPERATURE_MAX = 100
 
@@ -64,14 +64,23 @@ class TelemetryService:
                         await self.http_client.set_device_status(device.id, DeviceStatus.ERROR)
                         # Update local device object to reflect the change
                         device.status = DeviceStatus.ERROR.value
-                
+                else:
+                    print(f"Device {device.name} is {device.status} and type is {type(device.status)}")
+                    if device.status == DeviceStatus.ERROR.value:
+                        logger.info(f"Device {device.name} is error, updating status to ONLINE")
+                        device_update = {"status": DeviceStatus.ONLINE.value}
+                        await self.cache_client.update_device(device.id, device_update)
+                        await self.http_client.set_device_status(device.id, DeviceStatus.ONLINE)
+                        # Update local device object to reflect the change
+                        device.status = DeviceStatus.ONLINE.value
                 # Always send telemetry to cloud regardless of error status
                 if device.status in [DeviceStatus.ONLINE.value, DeviceStatus.ERROR.value]:
                     self.cloud_client.send_telemetry(device.name, event.data)
                     
                     # Only handle auto actuator for non-error data
                     if not error_fields and device.status == DeviceStatus.ONLINE.value:
-                        await self._handle_auto_actuator(device, device.actuators, event.data)
+                        actuators = await self.cache_client.get_actuators_by_device_id(device.id)
+                        await self._handle_auto_actuator(device, actuators, event.data)
                         
             except Exception as e:
                 logger.error(f"Error processing telemetry from {device.name}: {e}")
@@ -82,8 +91,9 @@ class TelemetryService:
         logger.info(f"Handling auto actuator for {device.name}")
         luminousity = data.get("luminousity")
         temperature = data.get("temperature")
+        humidity = data.get("humidity")
 
-        if luminousity == "E" or temperature == "E" or luminousity is None or temperature is None:
+        if luminousity == "E" or temperature == "E" or humidity == "E" or luminousity is None or temperature is None or humidity is None:
             await self.http_client.set_device_status(device.id, DeviceStatus.ERROR)
             logger.error(f"Device {device.name} reported error data in fields")
             return
@@ -91,23 +101,26 @@ class TelemetryService:
         try:
             luminousity = float(luminousity)
             temperature = float(temperature)
-            lighting_color = (luminousity - LUMINOUSITY_MIN) / (LUMINOUSITY_MAX - LUMINOUSITY_MIN) * 255
-            fan_state = (temperature - TEMPERATURE_MIN) / (TEMPERATURE_MAX - TEMPERATURE_MIN) > 0.2
+            lighting_color = (LUMINOUSITY_MAX - luminousity) / (LUMINOUSITY_MAX - LUMINOUSITY_MIN) * 255
+            lighting_color = max(0, min(lighting_color, 255))
+            fan_state = temperature > 28
 
             for actuator in actuators:
-                print(f"Actuator {actuator.name} is {actuator.mode}")
                 if actuator.mode == DeviceMode.AUTO.value:
                     if actuator.type == "led4RGB":
+                        logger.info(f"Setting lighting color to {lighting_color}")
                         await self.event_bus.publish(SetLightingEvent(
                             actuator_id=actuator.id,
                             color=tuple((int(lighting_color),) * 3 for _ in range(4)),
-                            request_id="auto_lighting"
+                            request_id="-1",
+                            waiting_response=False
                         ))
                     elif actuator.type == "fan":
                         await self.event_bus.publish(SetFanStateEvent(
                             actuator_id=actuator.id,
                             state=fan_state,
-                            request_id="auto_fan"
+                            request_id="-1",
+                            waiting_response=False
                         ))
         except Exception as e:
             logger.error(f"Error in auto actuator handling: {e}")

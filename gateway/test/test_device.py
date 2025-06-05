@@ -2,10 +2,9 @@
 import json
 import time
 import paho.mqtt.client as mqtt
-import uuid
 import signal
 import sys
-
+import random
 # MQTT broker settings
 BROKER_URL = "192.168.1.196"
 BROKER_PORT = 1883
@@ -16,19 +15,19 @@ TELEMETRY_TOPIC = "gateway/telemetry/{device_id}"
 LWT_TOPIC = "gateway/lwt"
 
 # Device registration payload
-device_mac = f"AA:BB:CC:{uuid.uuid4().hex[:6].upper()}"
+device_mac = f"AA:BB:CC:DD{random.randint(0, 99999):05d}"
 # device_mac = f"AA:BB:CC:EE:FF"
 # device_mac = f"CC:BA:97:0D:E2:44"
 device_id = None
 
 # Sample device registration payload
 registration_payload = {
-    "name": "Test Device Another Office",
+    "name": "Test Device",
     "mac_addr": device_mac,
     "fw_version": "1.0.0",
     "model": "Test_Model",
     "description": "A test device for registration",
-    "office_id": 3,
+    "office_id": 1,
     "sensors": [
         {
             "name": "DHT20",
@@ -158,6 +157,7 @@ print("- Just press Enter to continue normal operation\n")
 temp = 20
 humidity = 50
 error_mode = False
+luminousity = 100
 
 # Start the loop
 try:
@@ -186,10 +186,10 @@ try:
 
         # Prepare telemetry data
         if error_mode:
-            telemetry_data = {"temperature": "E", "humidity": "E"}
+            telemetry_data = {"temperature": "E", "humidity": "E", "luminousity": "E"}
             print(f"Sending ERROR telemetry: {telemetry_data}")
         else:
-            telemetry_data = {"temperature": temp, "humidity": humidity}
+            telemetry_data = {"temperature": temp, "humidity": humidity, "luminousity": luminousity}
 
         client.publish(
             TELEMETRY_TOPIC.format(device_id=device_id),
@@ -202,7 +202,7 @@ try:
         if not error_mode:
             temp += 1
             humidity += 1
-            
+            luminousity += 1
 except KeyboardInterrupt:
     signal_handler(signal.SIGINT, None)
 except Exception as e:

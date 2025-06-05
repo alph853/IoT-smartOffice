@@ -40,6 +40,8 @@ class ThingsboardClient(MqttCloudClientRepository):
 
         self._jwt     = None
         self._rpc_api = None
+        self._token_refresh_task = None
+        self._token_refresh_interval = 600  # 10 minutes in seconds
 
     # -------------------------------------------------------------
     # ------------------------- Lifecycle -------------------------
@@ -49,13 +51,67 @@ class ThingsboardClient(MqttCloudClientRepository):
         self._jwt = await self._get_jwt()
         self._rpc_api = self._get_url_from_api(self.api.rpc.format(device_id=self.device_id))
         self.headers = self._get_headers_with_jwt()
+        
+        # Start token refresh task
+        self._token_refresh_task = asyncio.create_task(self._token_refresh_loop())
+        
         self._ws_listener_task = asyncio.create_task(self._thingsboard_ws_listener())
-        logger.info(f"Thingsboard WS connected!")
+        logger.info(f"Thingsboard WS connected with token refresh every {self._token_refresh_interval/60} minutes!")
 
     async def disconnect(self):
-        if not self._ws_listener_task.done():
+        # Stop token refresh task
+        if self._token_refresh_task and not self._token_refresh_task.done():
+            self._token_refresh_task.cancel()
+            try:
+                await self._token_refresh_task
+            except asyncio.CancelledError:
+                pass
+            
+        if self._ws_listener_task and not self._ws_listener_task.done():
             self._ws_listener_task.cancel()
+            try:
+                await self._ws_listener_task
+            except asyncio.CancelledError:
+                pass
+                
         logger.info(f"Thingsboard broker disconnected.")
+
+    # -------------------------------------------------------------
+    # ------------------------- Token Management ------------------
+    # -------------------------------------------------------------
+
+    async def _token_refresh_loop(self):
+        """Background task to refresh JWT token every 10 minutes"""
+        try:
+            while True:
+                await asyncio.sleep(self._token_refresh_interval)
+                try:
+                    logger.info("Refreshing ThingsBoard JWT token...")
+                    old_jwt = self._jwt
+                    self._jwt = await self._get_jwt()
+                    self.headers = self._get_headers_with_jwt()
+                    self._rpc_api = self._get_url_from_api(self.api.rpc.format(device_id=self.device_id))
+                    logger.info("JWT token refreshed successfully")
+                except Exception as e:
+                    logger.error(f"Failed to refresh JWT token: {e}")
+                    # Continue with old token, will retry in next cycle
+        except asyncio.CancelledError:
+            logger.info("Token refresh task cancelled")
+        except Exception as e:
+            logger.error(f"Token refresh loop error: {e}")
+
+    async def refresh_token_now(self):
+        """Manually refresh the token (useful for error recovery)"""
+        try:
+            logger.info("Manually refreshing ThingsBoard JWT token...")
+            self._jwt = await self._get_jwt()
+            self.headers = self._get_headers_with_jwt()
+            self._rpc_api = self._get_url_from_api(self.api.rpc.format(device_id=self.device_id))
+            logger.info("JWT token manually refreshed successfully")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to manually refresh JWT token: {e}")
+            return False
 
     # -------------------------------------------------------------
     # ------------------------- Listeners -------------------------
@@ -79,6 +135,13 @@ class ThingsboardClient(MqttCloudClientRepository):
                             logger.error(f"Error processing telemetry: {e}")
                 except websockets.ConnectionClosed as e:
                     logger.error(f"Thingsboard WS session closed: {e.code} - {e}")
+                    # If connection closed due to authentication, try refreshing token
+                    if e.code in [1008, 4001, 4003]:  # Common auth error codes
+                        logger.info("Attempting to refresh token due to auth error...")
+                        if await self.refresh_token_now():
+                            # Restart the WS connection with new token
+                            logger.info("Token refreshed, restarting WS connection...")
+                            # This will be handled by the main connection logic
                 except Exception as e:
                     logger.error(f"Thingsboard WS connection error: {e}")
                 finally:
@@ -94,34 +157,80 @@ class ThingsboardClient(MqttCloudClientRepository):
         logger.info(f"Getting client ID for device {device_name}")
         encoded_name = urllib.parse.quote(device_name)
         url = self._get_url_from_api(self.api.get_client_id.format(device_name=encoded_name))
-        resp = await self.http_client.request(url, method="GET", headers=self.headers)
-        return resp["id"]["id"]
+        
+        try:
+            resp = await self.http_client.request(url, method="GET", headers=self.headers)
+            return resp["id"]["id"]
+        except Exception as e:
+            # If request fails due to auth, try refreshing token once
+            if "401" in str(e) or "403" in str(e):
+                logger.warning("Auth error detected, refreshing token...")
+                if await self.refresh_token_now():
+                    resp = await self.http_client.request(url, method="GET", headers=self.headers)
+                    return resp["id"]["id"]
+            raise
 
     async def send_rpc_command(self, request: Dict[str, Any]) -> RPCResponse:
         logger.info(f"Sending RPC command: {request}")
         url = self._rpc_api
-        resp = await self.http_client.request(url, payload=request, method="POST", headers=self.headers)
-        return RPCResponse(**resp)
+        
+        try:
+            resp = await self.http_client.request(url, payload=request, method="POST", headers=self.headers)
+            return RPCResponse(**resp)
+        except Exception as e:
+            # If request fails due to auth, try refreshing token once
+            if "401" in str(e) or "403" in str(e):
+                logger.warning("Auth error detected, refreshing token...")
+                if await self.refresh_token_now():
+                    resp = await self.http_client.request(url, payload=request, method="POST", headers=self.headers)
+                    return RPCResponse(**resp)
+            raise
 
     async def set_lighting(self, lighting_set: LightingSet) -> RPCResponse:
         logger.info(f"Setting lighting: {lighting_set}")
         url = self._rpc_api
-        resp = await self.http_client.request(url, payload=lighting_set.model_dump(), method="POST", headers=self.headers)
-        return RPCResponse(**resp)
+        
+        try:
+            resp = await self.http_client.request(url, payload=lighting_set.model_dump(), method="POST", headers=self.headers)
+            return RPCResponse(**resp)
+        except Exception as e:
+            if "401" in str(e) or "403" in str(e):
+                logger.warning("Auth error detected, refreshing token...")
+                if await self.refresh_token_now():
+                    resp = await self.http_client.request(url, payload=lighting_set.model_dump(), method="POST", headers=self.headers)
+                    return RPCResponse(**resp)
+            raise
 
     async def set_fan_state(self, fan_state_set: FanStateSet) -> RPCResponse:
         logger.info(f"Setting fan state: {fan_state_set}")
         url = self._rpc_api
-        resp = await self.http_client.request(url, payload=fan_state_set.model_dump(), method="POST", headers=self.headers)
-        return RPCResponse(**resp)
+        
+        try:
+            resp = await self.http_client.request(url, payload=fan_state_set.model_dump(), method="POST", headers=self.headers)
+            return RPCResponse(**resp)
+        except Exception as e:
+            if "401" in str(e) or "403" in str(e):
+                logger.warning("Auth error detected, refreshing token...")
+                if await self.refresh_token_now():
+                    resp = await self.http_client.request(url, payload=fan_state_set.model_dump(), method="POST", headers=self.headers)
+                    return RPCResponse(**resp)
+            raise
 
     async def delete_device(self, device_id: int, cloud_device_id: str) -> RPCResponse:
         try:
             url = self._get_url_from_api(self.api.delete_device.format(device_id=cloud_device_id))
             resp = await self.http_client.request(url, method="DELETE", headers=self.headers)
         except Exception as e:
-            logger.error(f"Error deleting device: {e}")
-            return RPCResponse(status="error", data={"message": str(e)})
+            if "401" in str(e) or "403" in str(e):
+                logger.warning("Auth error detected, refreshing token...")
+                if await self.refresh_token_now():
+                    resp = await self.http_client.request(url, method="DELETE", headers=self.headers)
+                else:
+                    logger.error(f"Error deleting device: {e}")
+                    return RPCResponse(status="error", data={"message": str(e)})
+            else:
+                logger.error(f"Error deleting device: {e}")
+                return RPCResponse(status="error", data={"message": str(e)})
 
         logger.info(f"Deleting device {device_id}")
         url = self._rpc_api
@@ -131,8 +240,17 @@ class ThingsboardClient(MqttCloudClientRepository):
                 "device_id": device_id
             }
         }
-        resp = await self.http_client.request(url, payload=payload, method="POST", headers=self.headers)
-        return RPCResponse(**resp)
+        
+        try:
+            resp = await self.http_client.request(url, payload=payload, method="POST", headers=self.headers)
+            return RPCResponse(**resp)
+        except Exception as e:
+            if "401" in str(e) or "403" in str(e):
+                logger.warning("Auth error detected, refreshing token...")
+                if await self.refresh_token_now():
+                    resp = await self.http_client.request(url, payload=payload, method="POST", headers=self.headers)
+                    return RPCResponse(**resp)
+            raise
 
     async def update_device(self, device_id: int, device_update: DeviceUpdate) -> RPCResponse:
         logger.info(f"Updating device {device_id} with {device_update}")
@@ -144,8 +262,17 @@ class ThingsboardClient(MqttCloudClientRepository):
                 "device_update": device_update.model_dump(exclude_unset=True)
             }
         }
-        resp = await self.http_client.request(url, payload=payload, method="POST", headers=self.headers)
-        return RPCResponse(**resp)
+        
+        try:
+            resp = await self.http_client.request(url, payload=payload, method="POST", headers=self.headers)
+            return RPCResponse(**resp)
+        except Exception as e:
+            if "401" in str(e) or "403" in str(e):
+                logger.warning("Auth error detected, refreshing token...")
+                if await self.refresh_token_now():
+                    resp = await self.http_client.request(url, payload=payload, method="POST", headers=self.headers)
+                    return RPCResponse(**resp)
+            raise
 
     async def update_actuator(self, actuator_id: int, actuator_update: ActuatorUpdate) -> RPCResponse:
         logger.info(f"Updating actuator {actuator_id} with {actuator_update}")
@@ -157,9 +284,19 @@ class ThingsboardClient(MqttCloudClientRepository):
                 "actuator_update": actuator_update.model_dump(exclude_unset=True)
             }
         }
-        resp = await self.http_client.request(url, payload=payload, method="POST", headers=self.headers)
-        print(f"Update actuator response: {resp}")
-        return RPCResponse(**resp)
+        
+        try:
+            resp = await self.http_client.request(url, payload=payload, method="POST", headers=self.headers)
+            print(f"Update actuator response: {resp}")
+            return RPCResponse(**resp)
+        except Exception as e:
+            if "401" in str(e) or "403" in str(e):
+                logger.warning("Auth error detected, refreshing token...")
+                if await self.refresh_token_now():
+                    resp = await self.http_client.request(url, payload=payload, method="POST", headers=self.headers)
+                    print(f"Update actuator response: {resp}")
+                    return RPCResponse(**resp)
+            raise
 
     # -------------------------------------------------------------
     # ----------------------------- Helper ------------------------

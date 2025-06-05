@@ -32,12 +32,12 @@ Led4ColorType = Tuple[SingleColorType, SingleColorType, SingleColorType, SingleC
 class SetLightingEvent(RPCRequest):
     actuator_id: int
     color: Led4ColorType
-
+    waiting_response: bool = True
 
 class SetFanStateEvent(RPCRequest):
     actuator_id: int
     state: bool
-
+    waiting_response: bool = True
 
 class RPCTestEvent(RPCRequest):
     device_id: int

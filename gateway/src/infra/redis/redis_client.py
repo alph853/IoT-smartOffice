@@ -138,6 +138,16 @@ class RedisCacheClient(CacheClientRepository):
             logger.error(f"Error updating actuator: {e}")
             return False
 
+    async def get_actuators_by_device_id(self, device_id: int) -> List[Actuator]:
+        actuator_keys = await self.client.keys(f"device:actuator:*")
+        actuators = []
+        for key in actuator_keys:
+            actuator = await self.client.get(key)
+            if actuator:
+                actuator = json.loads(actuator)
+                if actuator["device_id"] == device_id:
+                    actuators.append(Actuator(**actuator))
+        return actuators
     # -------------------------------------------------------------
     # ------------------------- Control -------------------------
     # -------------------------------------------------------------
