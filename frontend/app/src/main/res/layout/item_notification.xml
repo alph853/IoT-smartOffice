@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/background_black">
+
+    <!-- Icon -->
+    <ImageView
+        android:id="@+id/notification_icon"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_notifications"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@color/green" />
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/notification_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text="Notification Title"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toStartOf="@id/notification_time"
+        app:layout_constraintStart_toEndOf="@id/notification_icon"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Time -->
+    <TextView
+        android:id="@+id/notification_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="00:00 00-00-0000"
+        android:textColor="#AAAAAA"
+        android:textSize="12sp"
+        app:layout_constraintBottom_toBottomOf="@+id/notification_title"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/notification_title" />
+
+    <!-- Summary -->
+    <TextView
+        android:id="@+id/notification_summary"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text="Summary content goes here and can span multiple lines but is limited to two lines maximum."
+        android:textColor="#AAAAAA"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toBottomOf="@id/notification_icon"
+        app:layout_constraintStart_toEndOf="@id/notification_icon"
+        app:layout_constraintTop_toBottomOf="@id/notification_title" />
+
+    <!-- Read/Unread Indicator -->
+<!--    <View-->
+<!--        android:id="@+id/indicator"-->
+<!--        android:layout_width="14dp"-->
+<!--        android:layout_height="14dp"-->
+<!--        android:background="@drawable/indicator_unread"-->
+<!--        app:layout_constraintBottom_toBottomOf="@id/notification_summary"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        app:layout_constraintStart_toEndOf="@+id/notification_summary"-->
+<!--        app:layout_constraintTop_toTopOf="@+id/notification_summary" />-->
+
+</androidx.constraintlayout.widget.ConstraintLayout> 

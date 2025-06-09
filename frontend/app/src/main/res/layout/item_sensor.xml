@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    card_view:cardBackgroundColor="@color/background_black"
+    android:layout_marginTop="8dp"
+    card_view:cardCornerRadius="10dp">
+
+    <LinearLayout
+        android:id="@+id/sensorContent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@drawable/bg_setting_item"
+        android:paddingTop="12dp"
+        android:paddingStart="15dp"
+        android:paddingBottom="12dp"
+        android:paddingEnd="15dp">
+
+        <ImageView
+            android:id="@+id/imgSensor"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@drawable/ic_temperature"
+            android:contentDescription="Sensor icon"
+            android:layout_marginEnd="15dp" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvSensorName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sensor Name"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tvSensorType"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sensor Type"
+                android:textColor="@color/grey"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:layout_marginTop="2dp" />
+
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
